@@ -1,0 +1,1 @@
+../../../kit/scripts/twins_cand.py

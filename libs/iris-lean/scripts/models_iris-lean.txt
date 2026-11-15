@@ -1,0 +1,11 @@
+Type := Iris.DFrac
+Type := Iris.SiProp
+Type := Unit
+Type := Iris.Qp
+Iris.DFrac := Iris.DFrac.discard
+Iris.DFrac := Iris.DFrac.own 1
+Iris.DFrac := Iris.DFrac.ownDiscard 1
+Iris.SiProp := { holds := fun _ => True, closed := fun h _ => h }
+Iris.SiProp := { holds := fun _ => False, closed := fun h _ => h }
+Iris.SiProp := { holds := fun n => n = 0, closed := fun h hle => by omega }
+Iris.SiProp := { holds := fun n => n ≤ 1, closed := fun h hle => by omega }

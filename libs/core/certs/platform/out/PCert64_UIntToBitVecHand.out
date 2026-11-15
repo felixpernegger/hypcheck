@@ -1,0 +1,140 @@
+PCert.neg.USize.lt_iff_toBitVec32_lt.h2 (indep) via UIntToBitVecIndep.USize.lt_iff_toBitVec32_lt.h2
+PCert.neg.USize.toBitVec32_shiftLeft.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_shiftLeft.h2
+PCert.pos.USize.toBitVec64_toUInt32.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_toUInt32.h1
+PCert.pos.USize.toBitVec64_toUInt8.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_toUInt8.h1
+PCert.neg.UInt8.toBitVec32_toUSize.h1 (indep) via UIntToBitVecIndep.UInt8.toBitVec32_toUSize.h1
+PCert.pos.USize.toBitVec64_toUInt64.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_toUInt64.h1
+PCert.pos.USize.toBitVec64_toUInt16.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_toUInt16.h1
+PCert.pos.UInt64.toBitVec64_toUSize.h1 (indep) via UIntToBitVecIndep.UInt64.toBitVec64_toUSize.h1
+PCert.pos.USize.toBitVec64_ofFin.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_ofFin.h1
+PCert.neg.USize.toBitVec32_eq_toBitVec.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_eq_toBitVec.h1
+PCert.neg.USize.toBitVec32_toUInt32.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_toUInt32.h1
+PCert.neg.USize.toBitVec32_toUInt64.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_toUInt64.h1
+PCert.neg.USize.toBitVec64_ofNatLT.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_ofNatLT.h1
+PCert.pos.USize.toBitVec64_ofNatLT.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_ofNatLT.h2
+PCert.pos.USize.eq_iff_toBitVec64_eq.h2 (indep) via UIntToBitVecIndep.USize.eq_iff_toBitVec64_eq.h2
+PCert.neg.USize.toBitVec32_min.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_min.h2
+PCert.pos.USize.ne_iff_toBitVec64_ne.h2 (indep) via UIntToBitVecIndep.USize.ne_iff_toBitVec64_ne.h2
+PCert.pos.USize.le_iff_toBitVec64_le.h2 (indep) via UIntToBitVecIndep.USize.le_iff_toBitVec64_le.h2
+PCert.neg.USize.toBitVec32_mod.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_mod.h2
+PCert.pos.USize.toBitVec64_pow.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_pow.h2
+PCert.neg.USize.toBitVec32_mul.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_mul.h2
+PCert.neg.USize.toBitVec32_xor.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_xor.h2
+PCert.pos.USize.lt_iff_toBitVec64_lt.h2 (indep) via UIntToBitVecIndep.USize.lt_iff_toBitVec64_lt.h2
+PCert.neg.USize.toBitVec32_sub.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_sub.h2
+PCert.pos.USize.toBitVec64_xor.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_xor.h2
+PCert.pos.USize.toBitVec64_min.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_min.h2
+PCert.neg.USize.toBitVec32_neg.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_neg.h1
+PCert.neg.USize.toBitVec32_ofNat.h0 (indep) via UIntToBitVecIndep.USize.toBitVec32_ofNat.h0
+PCert.neg.USize.toBitVec32_ofBitVec.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_ofBitVec.h1
+PCert.pos.UInt16.toBitVec64_toUSize.h1 (indep) via UIntToBitVecIndep.UInt16.toBitVec64_toUSize.h1
+PCert.pos.UInt8.toBitVec64_toUSize.h1 (indep) via UIntToBitVecIndep.UInt8.toBitVec64_toUSize.h1
+PCert.pos.USize.toBitVec32_ofNatLT.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_ofNatLT.h1
+PCert.neg.USize.toBitVec32_ofNatLT.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_ofNatLT.h2
+PCert.pos.USize.toBitVec64_or.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_or.h2
+PCert.neg.USize.toBitVec32_max.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_max.h2
+PCert.pos.USize.toBitVec64_shiftRight.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_shiftRight.h2
+PCert.pos.USize.toBitVec64_div.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_div.h2
+PCert.neg.USize.le_iff_toBitVec32_le.h2 (indep) via UIntToBitVecIndep.USize.le_iff_toBitVec32_le.h2
+PCert.neg.USize.toBitVec32_or.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_or.h2
+PCert.pos.USize.toBitVec64_mod.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_mod.h2
+PCert.pos.USize.toBitVec64_eq_toBitVec.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_eq_toBitVec.h1
+PCert.pos.USize.toBitVec64_ofNat.h0 (indep) via UIntToBitVecIndep.USize.toBitVec64_ofNat.h0
+PCert.neg.Bool.toBitVec32_toUSize.h1 (indep) via UIntToBitVecIndep.Bool.toBitVec32_toUSize.h1
+PCert.neg.UInt64.toBitVec32_toUSize.h1 (indep) via UIntToBitVecIndep.UInt64.toBitVec32_toUSize.h1
+PCert.neg.USize.toBitVec32_toUInt8.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_toUInt8.h1
+PCert.neg.UInt16.toBitVec32_toUSize.h1 (indep) via UIntToBitVecIndep.UInt16.toBitVec32_toUSize.h1
+PCert.pos.USize.toBitVec64_and.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_and.h2
+PCert.neg.USize.eq_iff_toBitVec32_eq.h2 (indep) via UIntToBitVecIndep.USize.eq_iff_toBitVec32_eq.h2
+PCert.neg.USize.toBitVec32_div.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_div.h2
+PCert.pos.USize.toBitVec64_add.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_add.h2
+PCert.pos.USize.toBitVec64_sub.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_sub.h2
+PCert.neg.USize.ne_iff_toBitVec32_ne.h2 (indep) via UIntToBitVecIndep.USize.ne_iff_toBitVec32_ne.h2
+PCert.pos.USize.toBitVec64_shiftLeft.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_shiftLeft.h2
+PCert.neg.USize.toBitVec32_pow.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_pow.h2
+PCert.pos.USize.toBitVec64_max.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_max.h2
+PCert.neg.USize.toBitVec32_shiftRight.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_shiftRight.h2
+PCert.pos.USize.toBitVec64_mul.h2 (indep) via UIntToBitVecIndep.USize.toBitVec64_mul.h2
+PCert.neg.USize.toBitVec32_and.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_and.h2
+PCert.neg.USize.toBitVec32_add.h2 (indep) via UIntToBitVecIndep.USize.toBitVec32_add.h2
+PCert.pos.UInt32.toBitVec64_toUSize.h1 (indep) via UIntToBitVecIndep.UInt32.toBitVec64_toUSize.h1
+PCert.neg.USize.toBitVec32_not.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_not.h1
+PCert.pos.USize.toBitVec64_ofBitVec.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_ofBitVec.h1
+PCert.neg.UInt32.toBitVec32_toUSize.h1 (indep) via UIntToBitVecIndep.UInt32.toBitVec32_toUSize.h1
+PCert.pos.Bool.toBitVec64_toUSize.h1 (indep) via UIntToBitVecIndep.Bool.toBitVec64_toUSize.h1
+PCert.neg.USize.toBitVec32_toUInt16.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_toUInt16.h1
+PCert.neg.USize.toBitVec32_ofFin.h1 (indep) via UIntToBitVecIndep.USize.toBitVec32_ofFin.h1
+PCert.pos.USize.toBitVec64_neg.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_neg.h1
+PCert.pos.USize.toBitVec64_not.h1 (indep) via UIntToBitVecIndep.USize.toBitVec64_not.h1
+library axioms checked: 86; depending on a swap (re-proved): []
+closure: 1557 constants; swaps: #[System.Platform.getNumBits]
+OK theorem PCert.numBits_eq : System.Platform.numBits = 64
+OK theorem PCert.pos.UInt16.toBitVec64_toUSize.h1 : ∀ (n : UInt16), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_ofNatLT.h2 : ∀ {n : Nat}, n < USize.size → System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_min.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_shiftRight.h2 : ∀ (a b : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_ofBitVec.h1 : ∀ (n : BitVec System.Platform.numBits), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.lt_iff_toBitVec64_lt.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_xor.h2 : ∀ (a b : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_toUInt16.h1 : ∀ (n : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_sub.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_ofNat.h0 : ∀ (n : Nat), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_neg.h1 : ∀ {a : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.eq_iff_toBitVec64_eq.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_or.h2 : ∀ (a b : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_mul.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_eq_toBitVec.h1 : ∀ (a : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_div.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_pow.h2 : ∀ (a : USize) (n : Nat), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_mod.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_add.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.ne_iff_toBitVec64_ne.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.le_iff_toBitVec64_le.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_not.h1 : ∀ {a : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_toUInt32.h1 : ∀ (n : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_toUInt64.h1 : ∀ (n : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_and.h2 : ∀ (a b : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_ofFin.h1 : ∀ (n : Fin USize.size), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_max.h2 : ∀ {a b : USize}, System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_toUInt8.h1 : ∀ (n : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec64_shiftLeft.h2 : ∀ (a b : USize), System.Platform.numBits = 64
+OK theorem PCert.pos.USize.toBitVec32_ofNatLT.h1 : ∀ {n : Nat}, System.Platform.numBits = 32 → n < USize.size
+OK theorem PCert.pos.UInt8.toBitVec64_toUSize.h1 : ∀ (n : UInt8), System.Platform.numBits = 64
+OK theorem PCert.pos.UInt64.toBitVec64_toUSize.h1 : ∀ (n : UInt64), System.Platform.numBits = 64
+OK theorem PCert.pos.UInt32.toBitVec64_toUSize.h1 : ∀ (n : UInt32), System.Platform.numBits = 64
+OK theorem PCert.pos.Bool.toBitVec64_toUSize.h1 : ∀ {b : Bool}, System.Platform.numBits = 64
+OK theorem PCert.neg.UInt32.toBitVec32_toUSize.h1 : ¬∀ (n : UInt32), System.Platform.numBits = 32
+OK theorem PCert.neg.Bool.toBitVec32_toUSize.h1 : ¬∀ {b : Bool}, System.Platform.numBits = 32
+OK theorem PCert.neg.UInt16.toBitVec32_toUSize.h1 : ¬∀ (n : UInt16), System.Platform.numBits = 32
+OK theorem PCert.neg.UInt8.toBitVec32_toUSize.h1 : ¬∀ (n : UInt8), System.Platform.numBits = 32
+OK theorem PCert.neg.UInt64.toBitVec32_toUSize.h1 : ¬∀ (n : UInt64), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_ofNatLT.h2 : ¬∀ {n : Nat}, n < USize.size → System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_toUInt64.h1 : ¬∀ (n : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.eq_iff_toBitVec32_eq.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_toUInt8.h1 : ¬∀ (n : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_toUInt16.h1 : ¬∀ (n : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_ofBitVec.h1 : ¬∀ (n : BitVec System.Platform.numBits), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_ofFin.h1 : ¬∀ (n : Fin USize.size), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.ne_iff_toBitVec32_ne.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_pow.h2 : ¬∀ (a : USize) (n : Nat), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_toUInt32.h1 : ¬∀ (n : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_mul.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_max.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_add.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_sub.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_div.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_min.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_and.h2 : ¬∀ (a b : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_or.h2 : ¬∀ (a b : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_eq_toBitVec.h1 : ¬∀ (a : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_xor.h2 : ¬∀ (a b : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.le_iff_toBitVec32_le.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_shiftRight.h2 : ¬∀ (a b : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_mod.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_shiftLeft.h2 : ¬∀ (a b : USize), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_neg.h1 : ¬∀ {a : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec64_ofNatLT.h1 : ¬∀ {n : Nat}, System.Platform.numBits = 64 → n < USize.size
+OK theorem PCert.neg.USize.toBitVec32_ofNat.h0 : ¬∀ (n : Nat), System.Platform.numBits = 32
+OK theorem PCert.neg.USize.lt_iff_toBitVec32_lt.h2 : ¬∀ {a b : USize}, System.Platform.numBits = 32
+OK theorem PCert.neg.USize.toBitVec32_not.h1 : ¬∀ {a : USize}, System.Platform.numBits = 32
+OK swap PCert.swap : System.Platform.getNumBits = fun x => ⟨64, ⋯⟩

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Pinned-toolchain Lean (leanprover/lean4:v4.36.0-rc2, = batteries/lean-toolchain) with Batteries' build on LEAN_PATH.
+# Never the lean4 checkout. Callers that need a memory cap wrap this in systemd-run (see lean.sh, run.sh).
+REPO=${BATTERIES_DIR:?set BATTERIES_DIR to a Batteries checkout built at commit 4af7237}   # the Batteries checkout
+export LEAN_PATH="$REPO/.lake/build/lib/lean${LEAN_PATH:+:$LEAN_PATH}"
+exec "$HOME/.elan/toolchains/leanprover--lean4---v4.36.0-rc2/bin/lean" "$@"

@@ -1,0 +1,42 @@
+PCert.neg.UInt64.toUSize_mod_of_toNat_lt.h2 (drop) via UIntLemmasHand.UInt64.toUSize_mod_of_toNat_lt.h2_neg
+PCert.neg.UInt64.toUSize_mod_of_toNat_lt.h3 (drop) via UIntLemmasHand.UInt64.toUSize_mod_of_toNat_lt.h3_neg
+PCert.pos.USize.toUInt32_mod_of_dvd.h2 (drop) via UIntLemmasHand.USize.toUInt32_mod_of_dvd.h2_pos
+PCert.neg.USize.toUInt64_ofNat'.h1 (drop) via UIntLemmasHand.USize.toUInt64_ofNat'.h1_neg
+PCert.neg.UInt64.toUSize_div_of_toNat_lt.h2 (drop) via UIntLemmasHand.UInt64.toUSize_div_of_toNat_lt.h2_neg
+PCert.neg.UInt64.toUSize_div_of_toNat_lt.h3 (drop) via UIntLemmasHand.UInt64.toUSize_div_of_toNat_lt.h3_neg
+PCert.pos.USize.toUInt32_mod.h2 (drop) via UIntLemmasHand.USize.toUInt32_mod.h2_pos
+PCert.pos.USize.toUInt32_mod.h3 (drop) via UIntLemmasHand.USize.toUInt32_mod.h3_pos
+PCert.neg.UInt64.toUSize_mod.h2 (drop) via UIntLemmasHand.UInt64.toUSize_mod.h2_neg
+PCert.neg.UInt64.toUSize_mod.h3 (drop) via UIntLemmasHand.UInt64.toUSize_mod.h3_neg
+PCert.neg.UInt64.toUSize_mod_of_dvd_usizeSize.h2 (drop) via UIntLemmasHand.UInt64.toUSize_mod_of_dvd_usizeSize.h2_neg
+PCert.neg.UInt64.toUSize_div.h2 (drop) via UIntLemmasHand.UInt64.toUSize_div.h2_neg
+PCert.neg.UInt64.toUSize_div.h3 (drop) via UIntLemmasHand.UInt64.toUSize_div.h3_neg
+PCert.pos.UInt32.toUSize_ofNat'.h1 (drop) via UIntLemmasHand.UInt32.toUSize_ofNat'.h1_pos
+PCert.pos.UInt32.toUSize_ofNat.h1 (drop) via UIntLemmasHand.UInt32.toUSize_ofNat.h1_pos
+PCert.neg.UInt64.toUSize_mod_of_dvd.h2 (drop) via UIntLemmasHand.UInt64.toUSize_mod_of_dvd.h2_neg
+PCert.pos.UInt32.ofNatLT_uSizeToNat.h1 (indep) via UIntLemmasHand.UInt32.ofNatLT_uSizeToNat.h1_pos
+PCert.neg.USize.toUInt64_ofNat.h1 (drop) via UIntLemmasHand.USize.toUInt64_ofNat.h1_neg
+PCert.neg.USize.ofNatLT_uInt64ToNat.h1 (indep) via UIntLemmasHand.USize.ofNatLT_uInt64ToNat.h1_neg
+library axioms checked: 86; depending on a swap (re-proved): []
+closure: 748 constants; swaps: #[System.Platform.getNumBits]
+OK theorem PCert.numBits_eq : System.Platform.numBits = 32
+OK theorem PCert.pos.USize.toUInt32_mod.h3 : ∀ (a b : USize), a < 4294967296 → (a % b).toUInt32 = a.toUInt32 % b.toUInt32
+OK theorem PCert.pos.USize.toUInt32_mod.h2 : ∀ (a b : USize), b < 4294967296 → (a % b).toUInt32 = a.toUInt32 % b.toUInt32
+OK theorem PCert.pos.USize.toUInt32_mod_of_dvd.h2 : ∀ (a b : USize), (a % b).toUInt32 = a.toUInt32 % b.toUInt32
+OK theorem PCert.pos.UInt32.toUSize_ofNat.h1 : ∀ {n : Nat}, (OfNat.ofNat n).toUSize = OfNat.ofNat n
+OK theorem PCert.pos.UInt32.ofNatLT_uSizeToNat.h1 : ∀ (n : USize), n.toNat < UInt32.size
+OK theorem PCert.pos.UInt32.toUSize_ofNat'.h1 : ∀ {n : Nat}, (UInt32.ofNat n).toUSize = USize.ofNat n
+OK theorem PCert.neg.UInt64.toUSize_mod_of_dvd_usizeSize.h2 : ¬∀ (a b : UInt64), (a % b).toUSize = a.toUSize % b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_div_of_toNat_lt.h2 : ¬∀ (a b : UInt64), b.toNat < USize.size → (a / b).toUSize = a.toUSize / b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_div_of_toNat_lt.h3 : ¬∀ (a b : UInt64), a.toNat < USize.size → (a / b).toUSize = a.toUSize / b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_mod_of_dvd.h2 : ¬∀ (a b : UInt64), (a % b).toUSize = a.toUSize % b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_div.h2 : ¬∀ (a b : UInt64), b < 4294967296 → (a / b).toUSize = a.toUSize / b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_div.h3 : ¬∀ (a b : UInt64), a < 4294967296 → (a / b).toUSize = a.toUSize / b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_mod_of_toNat_lt.h2 : ¬∀ (a b : UInt64), b.toNat < USize.size → (a % b).toUSize = a.toUSize % b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_mod_of_toNat_lt.h3 : ¬∀ (a b : UInt64), a.toNat < USize.size → (a % b).toUSize = a.toUSize % b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_mod.h3 : ¬∀ (a b : UInt64), a < 4294967296 → (a % b).toUSize = a.toUSize % b.toUSize
+OK theorem PCert.neg.UInt64.toUSize_mod.h2 : ¬∀ (a b : UInt64), b < 4294967296 → (a % b).toUSize = a.toUSize % b.toUSize
+OK theorem PCert.neg.USize.ofNatLT_uInt64ToNat.h1 : ¬∀ (n : UInt64), n.toNat < USize.size
+OK theorem PCert.neg.USize.toUInt64_ofNat.h1 : ¬∀ {n : Nat}, (OfNat.ofNat n).toUInt64 = OfNat.ofNat n
+OK theorem PCert.neg.USize.toUInt64_ofNat'.h1 : ¬∀ {n : Nat}, (USize.ofNat n).toUInt64 = UInt64.ofNat n
+OK swap PCert.swap : System.Platform.getNumBits = fun x => ⟨32, ⋯⟩

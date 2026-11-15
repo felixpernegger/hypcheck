@@ -1,0 +1,6 @@
+#!/bin/bash
+# Native HypCheck (tools/, built with `lake build hypcheck` there) on the pinned toolchain + Batteries build.
+D=$(dirname "$(readlink -f "$0")"); REPO=${BATTERIES_DIR:?set BATTERIES_DIR to a Batteries checkout built at commit 4af7237}
+export LEAN_SYSROOT="$HOME/.elan/toolchains/leanprover--lean4---v4.36.0-rc2"
+export LEAN_PATH="$REPO/.lake/build/lib/lean${LEAN_PATH:+:$LEAN_PATH}"
+exec "$D/../tools/.lake/build/bin/hypcheck" "$@"

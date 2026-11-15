@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+template/scripts/.leanpath
+template/scripts/.leanbin
+template/tools/.lake/

@@ -1,0 +1,155 @@
+-- Hand-made counterexample models: `TYPE := TERM`, one per line. The counterexample search uses each
+-- as a candidate value for every binder of exactly that type (after type variables become Nat/Bool).
+-- Comments say which law the model violates.
+-- BEq
+BEq Bool := ⟨fun _ _ => true⟩              -- equivalence, not lawful
+BEq Bool := ⟨fun _ _ => false⟩             -- not reflexive
+BEq Bool := ⟨fun a b => a && b⟩            -- symmetric, transitive, not reflexive
+BEq Nat := ⟨fun a b => a / 2 == b / 2⟩     -- equivalence, not lawful
+BEq Nat := ⟨fun a b => a ≤ b⟩              -- reflexive, not symmetric
+BEq Nat := ⟨fun a b => a != b⟩             -- irreflexive
+BEq Nat := ⟨fun a b => a == b || a + 1 == b || b + 1 == a⟩  -- reflexive, symmetric, not transitive
+-- LT / LE
+LT Bool := ⟨fun _ _ => True⟩
+LT Bool := ⟨fun a b => a = b⟩
+LT Bool := ⟨fun a b => a ≠ b⟩
+LE Bool := ⟨fun _ _ => True⟩
+LE Bool := ⟨fun _ _ => False⟩
+LE Bool := ⟨fun a b => a = b⟩               -- partial order, not total
+LE Bool := ⟨fun a b => a ≠ b⟩
+LT Nat := ⟨fun a b => a ≤ b⟩                -- reflexive
+LT Nat := ⟨fun a b => a ≠ b⟩                -- symmetric
+LT Nat := ⟨fun a b => a % 2 < b % 2⟩        -- strict weak order, not total
+LT Nat := ⟨fun a b => b < a⟩                -- reversed
+LE Nat := ⟨fun a b => a % 2 ≤ b % 2⟩        -- total preorder, not antisymmetric
+LE Nat := ⟨fun a b => a ∣ b⟩                -- partial order, not total
+LE Nat := ⟨fun a b => b ≤ a⟩                -- reversed
+LE Nat := ⟨fun _ _ => True⟩
+LE Nat := ⟨fun a b => a < b⟩                -- irreflexive
+-- Ord
+Ord Bool := ⟨fun _ _ => .eq⟩
+Ord Bool := ⟨fun _ _ => .lt⟩
+Ord Bool := ⟨fun a b => compare b a⟩
+Ord Nat := ⟨fun a b => compare (a / 2) (b / 2)⟩   -- not antisymmetric
+Ord Nat := ⟨fun a b => if a = b then .eq else .lt⟩ -- not oriented
+Ord Nat := ⟨fun a b => compare b a⟩
+Ord Nat := ⟨fun _ _ => .eq⟩
+-- Min / Max
+Min Bool := ⟨fun a b => !a && !b⟩           -- NOR: not associative, not idempotent
+Min Bool := ⟨fun a _ => a⟩                  -- not commutative
+Max Bool := ⟨fun a b => !a && !b⟩
+Max Bool := ⟨fun a _ => a⟩
+Min Nat := ⟨fun a b => a - b⟩               -- not associative
+Min Nat := ⟨fun a b => a + b⟩               -- not idempotent
+Min Nat := ⟨max⟩
+Min Nat := ⟨fun a _ => a⟩
+Max Nat := ⟨fun a b => a - b⟩
+Max Nat := ⟨fun a b => a + b⟩
+Max Nat := ⟨min⟩
+Max Nat := ⟨fun a _ => a⟩
+-- binary operations
+Bool → Bool → Bool := fun a b => !a || b    -- implication: not associative, not commutative
+Bool → Bool → Bool := fun a b => !(a && b)  -- NAND: commutative, not associative
+Bool → Bool → Bool := fun a _ => a          -- associative, not commutative
+Bool → Bool → Bool := xor                   -- associative, commutative, not idempotent
+Nat → Nat → Nat := fun a b => a - b
+Nat → Nat → Nat := fun a b => a + b
+Nat → Nat → Nat := fun a _ => a
+Nat → Nat → Nat := fun a b => 2 * a + b
+-- relations
+Bool → Bool → Prop := fun _ _ => True
+Bool → Bool → Prop := fun _ _ => False
+Bool → Bool → Prop := fun a b => a = b
+Bool → Bool → Prop := fun a b => a ≠ b
+Bool → Bool → Prop := fun a b => a = true ∧ b = false
+Nat → Nat → Prop := fun a b => a < b
+Nat → Nat → Prop := fun a b => a ≤ b
+Nat → Nat → Prop := fun a b => a = b
+Nat → Nat → Prop := fun a b => a ≠ b
+Nat → Nat → Prop := fun _ _ => True
+Nat → Nat → Prop := fun a b => a % 2 = b % 2
+Nat → Nat → Prop := fun a b => b < a
+Bool → Bool → Bool := fun a b => a == b
+Bool → Bool → Bool := fun a b => a != b
+Bool → Bool → Bool := fun _ _ => true
+Nat → Nat → Bool := fun a b => a < b
+Nat → Nat → Bool := fun a b => a ≤ b
+Nat → Nat → Bool := fun a b => a == b
+Nat → Nat → Bool := fun a b => a != b
+Nat → Nat → Bool := fun _ _ => true
+Nat → Nat → Bool := fun a b => a / 2 == b / 2
+Bool → Bool → Ordering := fun _ _ => .eq
+Bool → Bool → Ordering := fun _ _ => .lt
+Bool → Bool → Ordering := fun a b => compare a b
+Bool → Bool → Ordering := fun a b => compare b a
+Nat → Nat → Ordering := fun a b => compare a b
+Nat → Nat → Ordering := fun a b => compare (a / 2) (b / 2)
+Nat → Nat → Ordering := fun a b => if a = b then .eq else .lt
+Nat → Nat → Ordering := fun a b => compare b a
+Nat → Nat → Ordering := fun _ _ => .eq
+-- unary functions and predicates
+Bool → Bool := not
+Bool → Bool := fun _ => true
+Bool → Bool := fun _ => false
+Bool → Bool := fun b => b
+Nat → Bool := fun n => n % 2 == 0
+Nat → Bool := fun n => n == 0
+Nat → Bool := fun _ => true
+Nat → Bool := fun _ => false
+Nat → Bool := fun n => n == 1
+Bool → Prop := fun b => b = true
+Bool → Prop := fun b => b = false
+Bool → Prop := fun _ => False
+Bool → Prop := fun _ => True
+Nat → Prop := fun n => n = 0
+Nat → Prop := fun n => n % 2 = 0
+Nat → Prop := fun _ => False
+Nat → Prop := fun _ => True
+Nat → Prop := fun n => n = 1
+Nat → Nat := fun n => n + 1
+Nat → Nat := fun _ => 0
+Nat → Nat := fun n => n / 2
+Nat → Nat := fun n => n
+Nat → Nat := fun n => 2 - n
+Bool → Nat := fun b => if b then 1 else 0
+Bool → Nat := fun _ => 0
+Nat → Bool := fun n => n ≤ 1
+Bool → Bool := fun b => b
+Nat → Option Nat := fun _ => none
+Nat → Option Nat := some
+Nat → Option Nat := fun n => if n % 2 = 0 then some n else none
+Nat → Option Nat := fun n => some (n + 1)
+Bool → Option Bool := fun _ => none
+Bool → Option Bool := some
+Bool → Option Bool := fun b => if b then some b else none
+Nat → List Nat := fun _ => []
+Nat → List Nat := fun n => [n]
+Nat → List Nat := fun n => [n, n]
+Nat → List Nat := fun n => List.range n
+Nat → Array Nat := fun _ => #[]
+Nat → Array Nat := fun n => #[n]
+Nat → Array Nat := fun n => #[n, n]
+Nat → Array Nat := fun n => Array.range n
+Bool → List Bool := fun _ => []
+Bool → List Bool := fun b => [b, b]
+-- values of types without generic enumeration
+Rat := 0
+Rat := 1
+Rat := -1
+Rat := 1 / 2
+Rat := -3 / 2
+Rat := 2
+-- monads: lawful ones and broken `Monad Option` instances
+Type → Type := Option
+Type → Type := Id
+Monad Option := { pure := fun _ => none, bind := Option.bind }     -- pure is not a left unit
+Monad Option := { pure := some, bind := fun _ _ => none }          -- bind ignores its argument
+Monad Option := { pure := some, bind := Option.bind, map := fun _ _ => none }  -- map not bind-based
+Nat → Option Bool := fun n => some (n % 2 == 0)
+Nat → Option Bool := fun _ => none
+-- bind-counting monad: lawful up to the counter, so `LawfulMonad` fails exactly when the number of
+-- binds differs (e.g. `mapM'` vs `mapM`)
+Type → Type := fun α => Nat × α
+Monad (fun α => Nat × α) := { pure := fun a => (0, a), bind := fun x f => ((f x.2).1 + x.1 + 1, (f x.2).2) }
+-- pure that leaves a mark, bind lawful otherwise
+Monad (fun α => Nat × α) := { pure := fun a => (1, a), bind := fun x f => ((f x.2).1 + x.1, (f x.2).2) }

@@ -1,0 +1,1201 @@
+diff --git a/Batteries/Control/AlternativeMonad.lean b/Batteries/Control/AlternativeMonad.lean
+index 7ae17eff..5f22efb7 100644
+--- a/Batteries/Control/AlternativeMonad.lean
++++ b/Batteries/Control/AlternativeMonad.lean
+@@ -101,9 +101,12 @@ section AlternativeMonad
+     _ = (PEmpty.elim <$> failure) >>= pure := by rw [bind_map_left, Function.comp_def]
+     _ = failure := by rw [map_failure, bind_pure]
+ 
+-@[simp] theorem seq_failure [AlternativeMonad m] [LawfulAlternative m] [LawfulMonad m]
++@[simp] theorem seq_failure [AlternativeMonad m] [LawfulAlternative m]
+     (x : m (α → β)) : x <*> failure = x *> failure := by
+-  simp only [seq_eq_bind_map, map_failure, seqRight_eq, bind_map_left]
++  have h {γ δ} (y : m (γ → δ)) : y <*> failure = ((· ∘ PEmpty.elim) <$> y) <*> failure := by
++    rw [← map_failure PEmpty.elim, ← pure_seq, seq_assoc, seq_pure, ← comp_map]; rfl
++  rw [seqRight_eq, h (_ <$> x), h x, ← comp_map]
++  exact congrArg (· <$> x <*> failure) (funext fun _ => funext nofun)
+ 
+ end AlternativeMonad
+ 
+diff --git a/Batteries/Control/LawfulMonadState.lean b/Batteries/Control/LawfulMonadState.lean
+index 00a04529..489e4c22 100644
+--- a/Batteries/Control/LawfulMonadState.lean
++++ b/Batteries/Control/LawfulMonadState.lean
+@@ -205,7 +205,7 @@ instance {σ ε} : LawfulMonadStateOf σ (EStateM ε σ) where
+ 
+ /-- If the underlying monad `m` has a lawful state instance, then the induced state instance on
+ `ReaderT ρ m` will also be lawful. -/
+-instance {m σ ρ} [Monad m] [LawfulMonad m] [MonadStateOf σ m] [LawfulMonadStateOf σ m] :
++instance {m σ ρ} [Monad m] [MonadStateOf σ m] [LawfulMonadStateOf σ m] :
+     LawfulMonadStateOf σ (ReaderT ρ m) where
+   modifyGet_eq f := ReaderT.ext fun ctx => by
+     simp [← liftM_modifyGet, LawfulMonadStateOf.modifyGet_eq, ← liftM_get]
+@@ -220,6 +220,14 @@ instance {m σ ρ} [Monad m] [LawfulMonad m] [MonadStateOf σ m] [LawfulMonadSta
+   set_bind_set s s' := ReaderT.ext fun ctx => by
+     simp [← liftM_set]
+ 
+-instance {m ω σ} [Monad m] [LawfulMonad m] [MonadStateOf σ m] [LawfulMonadStateOf σ m] :
++@[deprecated instReaderT +typeChanged (since := "2026-11-10")]
++theorem instReaderTOfLawfulMonad {m σ ρ} [Monad m] [LawfulMonad m] [MonadStateOf σ m]
++    [LawfulMonadStateOf σ m] : LawfulMonadStateOf σ (ReaderT ρ m) := instReaderT
++
++instance {m ω σ} [Monad m] [MonadStateOf σ m] [LawfulMonadStateOf σ m] :
+     LawfulMonadStateOf σ (StateRefT' ω σ m) :=
+   inferInstanceAs (LawfulMonadStateOf σ (ReaderT (ST.Ref ω σ) m))
++
++@[deprecated instStateRefT' +typeChanged (since := "2026-11-10")]
++theorem instStateRefT'OfLawfulMonad {m ω σ} [Monad m] [LawfulMonad m] [MonadStateOf σ m]
++    [LawfulMonadStateOf σ m] : LawfulMonadStateOf σ (StateRefT' ω σ m) := instStateRefT'
+diff --git a/Batteries/Control/OptionT.lean b/Batteries/Control/OptionT.lean
+index bb9c5d51..d7e797eb 100644
+--- a/Batteries/Control/OptionT.lean
++++ b/Batteries/Control/OptionT.lean
+@@ -24,7 +24,7 @@ namespace OptionT
+ @[simp] theorem run_mapConst [Monad m] [LawfulMonad m] (x : OptionT m α) (y : β) :
+     (Functor.mapConst y x).run = Option.map (Function.const α y) <$> x.run := run_map _ _
+ 
+-instance [Monad m] [LawfulMonad m] [MonadStateOf σ m] [LawfulMonadStateOf σ m] :
++instance [Monad m] [MonadStateOf σ m] [LawfulMonadStateOf σ m] :
+     LawfulMonadStateOf σ (OptionT m) where
+   modifyGet_eq f := by simp [← liftM_modifyGet, ← liftM_get, LawfulMonadStateOf.modifyGet_eq]
+   get_bind_const mx := OptionT.ext (by simp [← liftM_get])
+@@ -33,4 +33,8 @@ instance [Monad m] [LawfulMonad m] [MonadStateOf σ m] [LawfulMonadStateOf σ m]
+   set_bind_get s := OptionT.ext (by simp [← liftM_get, ← liftM_set])
+   set_bind_set s s' := OptionT.ext (by simp [← liftM_set])
+ 
++@[deprecated instLawfulMonadStateOf +typeChanged (since := "2026-11-10")]
++theorem instLawfulMonadStateOfOfLawfulMonad [Monad m] [LawfulMonad m] [MonadStateOf σ m]
++    [LawfulMonadStateOf σ m] : LawfulMonadStateOf σ (OptionT m) := instLawfulMonadStateOf
++
+ end OptionT
+diff --git a/Batteries/Data/Array/Scan.lean b/Batteries/Data/Array/Scan.lean
+index 5c0e7e12..d2a05a3d 100644
+--- a/Batteries/Data/Array/Scan.lean
++++ b/Batteries/Data/Array/Scan.lean
+@@ -82,21 +82,32 @@ theorem toList_scanrM [Monad m] [LawfulMonad m] {f : α → β → m β} {as : A
+     toList <$> as.scanrM f init = as.toList.scanrM f init := by
+   simp [scanrM_eq_scanrM_toList]
+ 
+-theorem scanlM_extract [Monad m] [LawfulMonad m] {f : β → α → m β} {as : Array α} :
++theorem scanlM_extract [Monad m] {f : β → α → m β} {as : Array α} :
+     (as.extract start stop).scanlM f init = as.scanlM f init start stop := by
+-  rw (occs := [2]) [scanlM]
+-  apply map_toList_inj.mp
+-  rw [scanlM.loop_toList, scanlM_eq_scanlM_toList, bind_pure_comp]
+-  simp_all only [toList_extract, Functor.map_map, id_map', List.nil_append_fun, id_map]
+-  grind [List.take_eq_take_iff, List.drop_eq_drop_iff]
+-
+-theorem scanrM_extract [Monad m] [LawfulMonad m] {f : α → β → m β} {as : Array α} :
++  by_cases hs : start ≤ as.size
++  · suffices ∀ i h₁ h acc cur,
++        scanlM.loop f cur (as.extract start stop) i (min stop as.size - start) h₁ acc =
++          scanlM.loop f cur as (start + i) (min stop as.size) h acc by
++      simpa [scanlM, Nat.min_eq_left hs] using this 0 (by simp) _ #[] init
++    intro i h₁ h acc cur
++    fun_induction scanlM.loop f cur (as.extract start stop) i _ h₁ acc <;>
++      rw [scanlM.loop] <;> split <;> simp_all [Nat.add_assoc] <;> omega
++  · rw [scanlM, scanlM, scanlM.loop, scanlM.loop, dite_eq_right (by simp; omega),
++      dite_eq_right (by omega)]
++
++theorem scanrM_extract [Monad m] {f : α → β → m β} {as : Array α} :
+     (as.extract stop start).scanrM f init = as.scanrM f init start stop := by
+-  rw (occs := [2]) [scanrM]
+-  apply map_toList_inj.mp
+-  rw [scanrM.loop_toList, scanrM_eq_scanrM_toList, bind_pure_comp]
+-  simp_all only [toList_extract,  Functor.map_map, id_map', List.reverse_nil, List.append_nil]
+-  grind [List.take_eq_take_iff, List.drop_eq_drop_iff]
++  by_cases hs : stop ≤ min start as.size
++  · suffices ∀ i h₁ h acc cur, scanrM.loop f cur (as.extract stop start) i 0 h₁ acc =
++        scanrM.loop f cur as (stop + i) stop h acc by
++      simpa [scanrM, Nat.add_sub_cancel' hs] using
++        this (min start as.size - stop) (by simp) (by omega) #[] init
++    intro i h₁ h acc cur
++    fun_induction scanrM.loop f cur (as.extract stop start) i 0 h₁ acc <;>
++      rw [scanrM.loop] <;> split <;> simp_all +zetaDelta
++    all_goals first | omega | simp (disch := omega) [Nat.add_sub_assoc, *]
++  · rw [scanrM, scanrM, scanrM.loop, scanrM.loop, dite_eq_right (by simp; omega),
++      dite_eq_right (by omega)]
+ 
+ @[simp, grind =]
+ theorem scanlM_empty [Monad m] {f : β → α → m β} {start stop : Nat} :
+@@ -136,14 +147,24 @@ theorem idRun_scanrM {f : α → β → Id β} {as : Array α} :
+   scanrM_pure
+ 
+ @[grind =]
+-theorem scanlM_map [Monad m] [LawfulMonad m] {f : α₁ → α₂ } {g: β → α₂ → m β} {as : Array α₁} :
++theorem scanlM_map [Monad m] {f : α₁ → α₂ } {g: β → α₂ → m β} {as : Array α₁} :
+     (as.map f).scanlM g init = as.scanlM (g · <| f ·) init := by
+-  simp only [scanlM_eq_scanlM_toList, toList_map, List.scanlM_map]
++  suffices ∀ start stop h acc cur, scanlM.loop g cur (as.map f) start stop (by simpa) acc =
++      scanlM.loop (g · <| f ·) cur as start stop h acc by
++    simp only [scanlM, size_map]; exact this ..
++  intro start stop h acc cur
++  fun_induction scanlM.loop (g · <| f ·) cur as start stop h acc <;> rw [scanlM.loop] <;>
++    split <;> simp_all
+ 
+ @[grind =]
+-theorem scanrM_map [Monad m] [LawfulMonad m] {f : α₁ → α₂ } {g: α₂ → β → m β} {as : Array α₁} :
++theorem scanrM_map [Monad m] {f : α₁ → α₂ } {g: α₂ → β → m β} {as : Array α₁} :
+     (as.map f).scanrM g init = as.scanrM (fun a b => g (f a) b) init := by
+-  simp only [scanrM_eq_scanrM_toList, toList_map, List.scanrM_map]
++  suffices ∀ start stop h acc cur, scanrM.loop g cur (as.map f) start stop (by simpa) acc =
++      scanrM.loop (fun a b => g (f a) b) cur as start stop h acc by
++    simp only [scanrM, size_map]; exact this ..
++  intro start stop h acc cur
++  fun_induction scanrM.loop (fun a b => g (f a) b) cur as start stop h acc <;>
++    rw [scanrM.loop] <;> split <;> simp_all +zetaDelta
+ 
+ /-- ### Array.scanl -/
+ 
+@@ -363,12 +384,12 @@ end List
+ namespace Subarray
+ 
+ @[simp]
+-theorem scanlM_eq_scanlM_extract [Monad m] [LawfulMonad m] {f : β → α → m β} {as : Subarray α} :
++theorem scanlM_eq_scanlM_extract [Monad m] {f : β → α → m β} {as : Subarray α} :
+     as.scanlM f init = (as.array.extract as.start as.stop).scanlM f init := by
+   simp only [scanlM, Array.scanlM_extract]
+ 
+ @[simp]
+-theorem scanrM_eq_scanrM_extract [Monad m] [LawfulMonad m] {f : α → β → m β} {as : Subarray α} :
++theorem scanrM_eq_scanrM_extract [Monad m] {f : α → β → m β} {as : Subarray α} :
+     as.scanrM f init = (as.array.extract as.start as.stop).scanrM f init := by
+   simp only [scanrM, Array.scanrM_extract]
+ 
+diff --git a/Batteries/Data/BinaryHeap/Lemmas.lean b/Batteries/Data/BinaryHeap/Lemmas.lean
+index 79743854..3fb2c603 100644
+--- a/Batteries/Data/BinaryHeap/Lemmas.lean
++++ b/Batteries/Data/BinaryHeap/Lemmas.lean
+@@ -29,8 +29,8 @@ theorem maxChild_isChild [Ord α] {a : Vector α sz} (h : maxChild a i = some j)
+   grind only [maxChild, = Option.isSome]
+ 
+ theorem maxChild_ge_left [Ord α] [Std.OrientedOrd α] (a : Vector α sz) (i j : Fin sz)
+-    (hmc : maxChild a i = some j) (hleft : 2 * i.val + 1 < sz) :
+-    compare a[j] a[2 * i.val + 1] |>.isGE := by
++    (hmc : maxChild a i = some j) :
++    compare a[j] (a[2 * i.val + 1]'(by have := maxChild_isChild hmc; omega)) |>.isGE := by
+   grind only [Std.OrientedOrd.isGE_of_isLT, Ordering.isGE, Ordering.isLT, maxChild, Fin.getElem_fin]
+ 
+ theorem maxChild_ge_right [Ord α] [Std.OrientedOrd α] (a : Vector α sz)
+@@ -415,12 +415,14 @@ theorem mem_iff_get [Ord α] {heap : BinaryHeap α} :
+ 
+ @[simp, grind .]
+ theorem max_ge_all [Ord α] [Std.TransOrd α]
+-    {heap : BinaryHeap α} (hwf : WF heap) (h_in: y ∈ heap) (h_ne : heap.size > 0) :
+-    compare (heap.max.get <| by simp_all [max,size]) y |>.isGE := by
++    {heap : BinaryHeap α} (hwf : WF heap) (h_in: y ∈ heap) :
++    compare (heap.max.get <| by have := Array.size_pos_of_mem h_in; simp_all [max])
++      y |>.isGE := by
++  have h_ne : heap.size > 0 := Array.size_pos_of_mem h_in
+   have ⟨idx, h_sz, h_ge⟩ := Array.mem_iff_getElem.mp h_in
+   subst h_ge
+   simp only [max, Array.getElem?_eq_getElem h_ne, Option.get_some]
+-  exact hwf.root_ge_all h_ne ⟨idx, h_sz⟩
++  exact hwf.root_ge_all ⟨idx, h_sz⟩
+ 
+ /-- Removing the maximum element from a well-formed heap preserves well-formedness. -/
+ @[simp, grind .]
+@@ -552,7 +554,7 @@ private theorem toSortedArray.loop_sorted [Ord α] [Std.TransOrd α] {heap : Bin
+   · have : x ∈ heap := by simp_all [mem_def, max, Array.mem_of_getElem? h]
+     simp_all [List.pairwise_append]
+   · have hx_ge_heap : ∀ y ∈ heap, compare x y |>.isGE := fun _ hy => by
+-      simpa [h] using max_ge_all hwf hy h_pos
++      simpa [h] using max_ge_all hwf hy
+     intro _ hy
+     rw [Array.mem_push] at hy
+     cases hy <;> simp_all [mem_of_mem_popMax]
+diff --git a/Batteries/Data/BinaryHeap/WF.lean b/Batteries/Data/BinaryHeap/WF.lean
+index 03dac803..4385ca59 100644
+--- a/Batteries/Data/BinaryHeap/WF.lean
++++ b/Batteries/Data/BinaryHeap/WF.lean
+@@ -147,9 +147,9 @@ theorem TopDown.children_and_below [Ord α] {a : Vector α sz} (htd : WF.TopDown
+ 
+ /-- A node dominates all descendants in its subtree in a well-formed heap. -/
+ theorem parent_ge_subtree [Ord α] [Std.TransOrd α]
+-    {a : Vector α sz} {hk : k < sz} {hj : j < sz} (hwf_at : WF.Children a ⟨j, hj⟩)
+-    (hwf_below : WF.Below a j) (hsub : InSubtree j k) :
+-    (compare a[j] a[k]).isGE := by
++    {a : Vector α sz} {hk : k < sz} (hsub : InSubtree j k)
++    (hwf_at : WF.Children a ⟨j, Nat.lt_of_le_of_lt hsub.le hk⟩) (hwf_below : WF.Below a j) :
++    (compare (a[j]'(Nat.lt_of_le_of_lt hsub.le hk)) a[k]).isGE := by
+   induction hsub
+   case refl => simp
+   case left k _ _ | right k _ _ =>
+@@ -169,7 +169,7 @@ theorem ge_subtree_of_modify [Ord α] [Std.TransOrd α] {a b : Vector α sz} {j
+   · simp_all
+   · rw [hunchanged m hsub hm_eq]
+     apply Std.TransOrd.isGE_trans hge
+-    exact parent_ge_subtree hwf_at hwf_below hsub
++    exact parent_ge_subtree hsub hwf_at hwf_below
+ 
+ /-- Parent dominates all descendants after setting a smaller value -/
+ theorem TopDown.parent_ge_subtree_of_set [Ord α] [Std.TransOrd α] {v : Vector α sz} {i : Fin sz}
+@@ -203,10 +203,10 @@ theorem swap_preserves_ge_subtree [Ord α] [Std.TransOrd α]
+ 
+ /-- The root element is greater than or equal to all heap elements. -/
+ theorem TopDown.root_ge_all [Ord α] [Std.TransOrd α]
+-    {a : Vector α sz} (hwf : WF.TopDown a) (hne : 0 < sz) (k : Fin sz) :
+-    (compare a[0] a[k]).isGE :=
+-  have ⟨hwf_at, hwf_below⟩ := hwf.children_and_below ⟨0, hne⟩
+-  parent_ge_subtree hwf_at hwf_below (InSubtree.mem_of_zero k.val)
++    {a : Vector α sz} (hwf : WF.TopDown a) (k : Fin sz) :
++    (compare (a[0]'k.pos) a[k]).isGE :=
++  have ⟨hwf_at, hwf_below⟩ := hwf.children_and_below ⟨0, k.pos⟩
++  parent_ge_subtree (InSubtree.mem_of_zero k.val) hwf_at hwf_below
+ 
+ /-- "Dual" correctness property to `WF.Children`. A parent should be >= current node.
+     Used when verifying heapifyUp -/
+diff --git a/Batteries/Data/ByteArray.lean b/Batteries/Data/ByteArray.lean
+index 0f9f886e..e4d3a055 100644
+--- a/Batteries/Data/ByteArray.lean
++++ b/Batteries/Data/ByteArray.lean
+@@ -59,14 +59,12 @@ theorem set_set (a : ByteArray) (i : Fin a.size) (v v' : UInt8) :
+ 
+ /-! ### append -/
+ 
+-theorem get_append_left {a b : ByteArray} (hlt : i < a.size)
+-    (h : i < (a ++ b).size := size_append .. ▸ Nat.lt_of_lt_of_le hlt (Nat.le_add_right ..)) :
+-    (a ++ b)[i] = a[i] := by
++theorem get_append_left {a b : ByteArray} (hlt : i < a.size) :
++    (a ++ b)[i]'(by simp; omega) = a[i] := by
+   simp [getElem_eq_data_getElem]; exact Array.getElem_append_left hlt
+ 
+-theorem get_append_right {a b : ByteArray} (hle : a.size ≤ i) (h : i < (a ++ b).size)
+-    (h' : i - a.size < b.size := Nat.sub_lt_left_of_lt_add hle (size_append .. ▸ h)) :
+-    (a ++ b)[i] = b[i - a.size] := by
++theorem get_append_right {a b : ByteArray} (hle : a.size ≤ i) (h : i < (a ++ b).size) :
++    (a ++ b)[i] = b[i - a.size]'(by simp at h; omega) := by
+   simp [getElem_eq_data_getElem]; exact Array.getElem_append_right hle
+ 
+ /-! ### extract -/
+diff --git a/Batteries/Data/Fin/Fold.lean b/Batteries/Data/Fin/Fold.lean
+index 3a2330c8..efcb1747 100644
+--- a/Batteries/Data/Fin/Fold.lean
++++ b/Batteries/Data/Fin/Fold.lean
+@@ -6,6 +6,7 @@ Authors: François G. Dorais, Quang Dao
+ module
+ 
+ public import Batteries.Data.Fin.Basic
++import all Init.Data.Fin.Fold
+ 
+ public section
+ 
+@@ -14,7 +15,7 @@ namespace Fin
+ /-! ### dfoldrM -/
+ 
+ theorem dfoldrM_loop_zero [Monad m] (f : (i : Fin n) → α i.succ → m (α i.castSucc)) (x) :
+-    dfoldrM.loop n α f 0 h x = pure x := rfl
++    dfoldrM.loop n α f 0 (Nat.zero_lt_succ n) x = pure x := rfl
+ 
+ theorem dfoldrM_loop_succ [Monad m] (f : (i : Fin n) → α i.succ → m (α i.castSucc)) (x) :
+     dfoldrM.loop n α f (i+1) h x = f ⟨i, by omega⟩ x >>= dfoldrM.loop n α f i (by omega) := rfl
+@@ -39,11 +40,14 @@ theorem dfoldrM_loop [Monad m] [LawfulMonad m] (f : (i : Fin (n+1)) → α i.suc
+ theorem dfoldrM_succ [Monad m] [LawfulMonad m] (f : (i : Fin (n+1)) → α i.succ → m (α i.castSucc))
+     (x) : dfoldrM (n+1) α f x = dfoldrM n (α ∘ succ) (f ·.succ) x >>= f 0 := dfoldrM_loop ..
+ 
+-theorem dfoldrM_eq_foldrM [Monad m] [LawfulMonad m] (f : (i : Fin n) → α → m α) (x) :
++theorem dfoldrM_eq_foldrM [Monad m] (f : (i : Fin n) → α → m α) (x) :
+     dfoldrM n (fun _ => α) f x = foldrM n f x := by
+-  induction n with
+-  | zero => simp only [dfoldrM_zero, foldrM_zero]
+-  | succ n ih => simp only [dfoldrM_succ, foldrM_succ, Function.comp_def, ih]
++  suffices ∀ i h x, dfoldrM.loop n (fun _ => α) f i h x = foldrM.loop n f ⟨i, by omega⟩ x from
++    this ..
++  intro i h x
++  induction i generalizing x with
++  | zero => exact (foldrM_loop_zero f x).symm
++  | succ i ih => rw [dfoldrM_loop_succ, foldrM_loop_succ]; exact bind_congr fun _ => ih ..
+ 
+ theorem dfoldr_eq_dfoldrM (f : (i : Fin n) → α i.succ → α i.castSucc) (x) :
+     dfoldr n α f x = dfoldrM (m:=Id) n α f x := rfl
+diff --git a/Batteries/Data/Float/Lemmas.lean b/Batteries/Data/Float/Lemmas.lean
+index 10c45ac8..c6a37dee 100644
+--- a/Batteries/Data/Float/Lemmas.lean
++++ b/Batteries/Data/Float/Lemmas.lean
+@@ -152,9 +152,25 @@ theorem unpack_eq_notANumber_iff_of_valid {spec : Format} {b : BitVec spec.numBi
+     (hvalid : spec.Valid b) : unpack spec b = notANumber ↔ b = packedNaN spec := by
+   rw [← @unpack_packedNaN spec, unpack_inj_of_valid hvalid ⟨fun _ _ => rfl⟩]
+ 
++/-- An invalid bit pattern is a non-canonical NaN. -/
++private theorem unpack_of_not_valid {spec : Format} {b : BitVec spec.numBits}
++    (h : ¬ spec.Valid b) : unpack spec b = notANumber := by
++  have : unpackExponent b = -1#_ ∧ unpackMantissa b ≠ 0#_ :=
++    Classical.byContradiction fun hc => h ⟨fun h₁ h₂ => (hc ⟨h₁, h₂⟩).elim⟩
++  simp [unpack, this]
++
++theorem unpack_eq_zero_iff {spec : Format} {sign : Sign} {b : BitVec spec.numBits} :
++    unpack spec b = zero sign ↔ b = packedZero spec sign := by
++  have hzero : spec.Valid (packedZero spec sign) := ⟨by simp [packedZero]⟩
++  by_cases hvalid : spec.Valid b
++  · rw [← @unpack_packedZero spec, unpack_inj_of_valid hvalid hzero]
++  · rw [unpack_of_not_valid hvalid]
++    exact ⟨nofun, fun h => (hvalid (h ▸ hzero)).elim⟩
++
++@[deprecated unpack_eq_zero_iff +typeChanged (since := "2026-11-10")]
+ theorem unpack_eq_zero_iff_of_valid {spec : Format} {sign : Sign} {b : BitVec spec.numBits}
+-    (hvalid : spec.Valid b) : unpack spec b = zero sign ↔ b = packedZero spec sign := by
+-  rw [← @unpack_packedZero spec, unpack_inj_of_valid hvalid ⟨by simp [packedZero]⟩]
++    (_ : spec.Valid b) : unpack spec b = zero sign ↔ b = packedZero spec sign :=
++  unpack_eq_zero_iff
+ 
+ theorem isNaN_unpack_iff_of_valid {spec : Format} {b : BitVec spec.numBits}
+     (hvalid : spec.Valid b) : (unpack spec b).isNaN ↔ b = packedNaN spec := by
+@@ -168,13 +184,37 @@ theorem beq_iff_ne_notANumber_and_eq (a b : UnpackedFloat) :
+   fun_cases UnpackedFloat.compare a b <;> simp_all [eq_comm (α := UnpackedFloat), and_comm] <;>
+     rename_i s₁ s₂ <;> revert s₁ s₂ <;> decide
+ 
+-theorem unpack_beq_unpack_iff {spec : Format} {b b' : BitVec spec.numBits}
+-    (hb : spec.Valid b) (hb' : spec.Valid b') :
++theorem unpack_beq_unpack_iff_of_valid_left {spec : Format} {b b' : BitVec spec.numBits}
++    (hb : spec.Valid b) :
+     (unpack spec b).beq (unpack spec b') ↔ b ≠ packedNaN spec ∧ b' ≠ packedNaN spec ∧
+         (b = b' ∨ (b = packedZero spec .positive ∧ b' = packedZero spec .negative) ∨
+           (b = packedZero spec .negative ∧ b' = packedZero spec .positive)) := by
+   rw [beq_iff_ne_notANumber_and_eq]
+-  simp [unpack_eq_notANumber_iff_of_valid, unpack_eq_zero_iff_of_valid, unpack_inj_of_valid, *]
++  by_cases hb' : spec.Valid b'
++  · simp [unpack_eq_notANumber_iff_of_valid, unpack_eq_zero_iff, unpack_inj_of_valid, *]
++  · have hzero {s} : spec.Valid (packedZero spec s) := ⟨by simp [packedZero]⟩
++    simp only [unpack_of_not_valid hb', ne_eq, not_true, false_and, and_false, false_iff]
++    rintro ⟨-, -, rfl | ⟨-, rfl⟩ | ⟨-, rfl⟩⟩ <;> first | exact hb' hb | exact hb' hzero
++
++theorem unpack_beq_unpack_iff_of_valid_right {spec : Format} {b b' : BitVec spec.numBits}
++    (hb' : spec.Valid b') :
++    (unpack spec b).beq (unpack spec b') ↔ b ≠ packedNaN spec ∧ b' ≠ packedNaN spec ∧
++        (b = b' ∨ (b = packedZero spec .positive ∧ b' = packedZero spec .negative) ∨
++          (b = packedZero spec .negative ∧ b' = packedZero spec .positive)) := by
++  by_cases hb : spec.Valid b
++  · exact unpack_beq_unpack_iff_of_valid_left hb
++  · have hzero {s} : spec.Valid (packedZero spec s) := ⟨by simp [packedZero]⟩
++    rw [beq_iff_ne_notANumber_and_eq]
++    simp only [unpack_of_not_valid hb, ne_eq, not_true, false_and, false_iff]
++    rintro ⟨-, -, rfl | ⟨rfl, -⟩ | ⟨rfl, -⟩⟩ <;> first | exact hb hb' | exact hb hzero
++
++@[deprecated unpack_beq_unpack_iff_of_valid_left +typeChanged (since := "2026-11-10")]
++theorem unpack_beq_unpack_iff {spec : Format} {b b' : BitVec spec.numBits}
++    (hb : spec.Valid b) (_ : spec.Valid b') :
++    (unpack spec b).beq (unpack spec b') ↔ b ≠ packedNaN spec ∧ b' ≠ packedNaN spec ∧
++        (b = b' ∨ (b = packedZero spec .positive ∧ b' = packedZero spec .negative) ∨
++          (b = packedZero spec .negative ∧ b' = packedZero spec .positive)) :=
++  unpack_beq_unpack_iff_of_valid_left hb
+ 
+ end Float.Model.UnpackedFloat
+ 
+@@ -207,12 +247,12 @@ theorem Float32.isNaN_eq_decide_eq_nan {f : Float32} : isNaN f = decide (f = nan
+ theorem Float.beq_iff_ne_nan_and_eq {f f' : Float} :
+     f == f' ↔ f ≠ nan ∧ f' ≠ nan ∧ (f = f' ∨ (f = 0 ∧ f' = -0) ∨ (f = -0 ∧ f' = 0)) := by
+   simp only [ne_eq, ← toBits_inj, ← UInt64.toBitVec_inj]
+-  exact Float.Model.UnpackedFloat.unpack_beq_unpack_iff f.toModel.valid f'.toModel.valid
++  exact Float.Model.UnpackedFloat.unpack_beq_unpack_iff_of_valid_left f.toModel.valid
+ 
+ theorem Float32.beq_iff_ne_nan_and_eq {f f' : Float32} :
+     f == f' ↔ f ≠ nan ∧ f' ≠ nan ∧ (f = f' ∨ (f = 0 ∧ f' = -0) ∨ (f = -0 ∧ f' = 0)) := by
+   simp only [ne_eq, ← toBits_inj, ← UInt32.toBitVec_inj]
+-  exact Float.Model.UnpackedFloat.unpack_beq_unpack_iff f.toModel.valid f'.toModel.valid
++  exact Float.Model.UnpackedFloat.unpack_beq_unpack_iff_of_valid_left f.toModel.valid
+ 
+ @[simp]
+ theorem Float.nan_beq_eq_false (f : Float) : (nan == f) = false := by
+diff --git a/Batteries/Data/List/Lemmas.lean b/Batteries/Data/List/Lemmas.lean
+index cbe44bd9..afb05e34 100644
+--- a/Batteries/Data/List/Lemmas.lean
++++ b/Batteries/Data/List/Lemmas.lean
+@@ -332,6 +332,24 @@ variable [BEq α]
+ 
+ @[simp] theorem diff_nil (l : List α) : l.diff [] = l := rfl
+ 
++@[simp] theorem nil_diff (l : List α) : [].diff l = [] := by
++  induction l <;> simp_all [List.diff]
++
++@[simp] theorem diff_append (l₁ l₂ l₃ : List α) : l₁.diff (l₂ ++ l₃) = (l₁.diff l₂).diff l₃ := by
++  induction l₂ generalizing l₁ with
++  | nil => rfl
++  | cons a l ih => simp only [cons_append, List.diff]; split <;> apply ih
++
++theorem diff_sublist : ∀ l₁ l₂ : List α, l₁.diff l₂ <+ l₁
++  | _, [] => .refl _
++  | l₁, a :: l₂ => by
++    rw [List.diff]
++    split
++    · exact (diff_sublist ..).trans erase_sublist
++    · exact diff_sublist ..
++
++theorem diff_subset (l₁ l₂ : List α) : l₁.diff l₂ ⊆ l₁ := (diff_sublist ..).subset
++
+ variable [LawfulBEq α]
+ 
+ @[simp] theorem diff_cons (l₁ l₂ : List α) (a : α) : l₁.diff (a :: l₂) = (l₁.erase a).diff l₂ := by
+@@ -343,9 +361,6 @@ theorem diff_cons_right (l₁ l₂ : List α) (a : α) : l₁.diff (a :: l₂) =
+ theorem diff_erase (l₁ l₂ : List α) (a : α) : (l₁.diff l₂).erase a = (l₁.erase a).diff l₂ := by
+   rw [← diff_cons_right, diff_cons]
+ 
+-@[simp] theorem nil_diff (l : List α) : [].diff l = [] := by
+-  induction l <;> simp [*, erase_of_not_mem]
+-
+ theorem cons_diff (a : α) (l₁ l₂ : List α) :
+     (a :: l₁).diff l₂ = if a ∈ l₂ then l₁.diff (l₂.erase a) else a :: l₁.diff l₂ := by
+   induction l₂ generalizing l₁ with
+@@ -367,19 +382,6 @@ theorem diff_eq_foldl : ∀ l₁ l₂ : List α, l₁.diff l₂ = foldl List.era
+   | _, [] => rfl
+   | l₁, a :: l₂ => (diff_cons l₁ l₂ a).trans (diff_eq_foldl _ _)
+ 
+-@[simp] theorem diff_append (l₁ l₂ l₃ : List α) : l₁.diff (l₂ ++ l₃) = (l₁.diff l₂).diff l₃ := by
+-  simp only [diff_eq_foldl, foldl_append]
+-
+-theorem diff_sublist : ∀ l₁ l₂ : List α, l₁.diff l₂ <+ l₁
+-  | _, [] => .refl _
+-  | l₁, a :: l₂ =>
+-    calc
+-      l₁.diff (a :: l₂) = (l₁.erase a).diff l₂ := diff_cons ..
+-      _ <+ l₁.erase a := diff_sublist ..
+-      _ <+ l₁ := erase_sublist ..
+-
+-theorem diff_subset (l₁ l₂ : List α) : l₁.diff l₂ ⊆ l₁ := (diff_sublist ..).subset
+-
+ theorem mem_diff_of_mem {a : α} : ∀ {l₁ l₂ : List α}, a ∈ l₁ → a ∉ l₂ → a ∈ l₁.diff l₂
+   | _, [], h₁, _ => h₁
+   | l₁, b :: l₂, h₁, h₂ => by
+@@ -390,15 +392,20 @@ theorem Sublist.diff_right : ∀ {l₁ l₂ l₃ : List α}, l₁ <+ l₂ → l
+   | _,  _, [], h => h
+   | l₁, l₂, a :: l₃, h => by simp only [diff_cons, (h.erase _).diff_right]
+ 
+-theorem Sublist.erase_diff_erase_sublist {a : α} :
+-    ∀ {l₁ l₂ : List α}, l₁ <+ l₂ → (l₂.erase a).diff (l₁.erase a) <+ l₂.diff l₁
+-  | [], _, _ => erase_sublist
+-  | b :: l₁, l₂, h => by
++theorem erase_diff_erase_sublist {a : α} :
++    ∀ {l₁ l₂ : List α}, (l₂.erase a).diff (l₁.erase a) <+ l₂.diff l₁
++  | [], _ => erase_sublist
++  | b :: l₁, l₂ => by
+     if heq : b = a then
+       simp [heq]
+     else
+       simp [heq, erase_comm a]
+-      exact (erase_cons_head b _ ▸ h.erase b).erase_diff_erase_sublist
++      exact erase_diff_erase_sublist
++
++@[deprecated List.erase_diff_erase_sublist +typeChanged (since := "2026-11-10")]
++theorem Sublist.erase_diff_erase_sublist {a : α} {l₁ l₂ : List α} (_ : l₁ <+ l₂) :
++    (l₂.erase a).diff (l₁.erase a) <+ l₂.diff l₁ :=
++  List.erase_diff_erase_sublist
+ 
+ end Diff
+ 
+diff --git a/Batteries/Data/List/Perm.lean b/Batteries/Data/List/Perm.lean
+index f095abc8..47749829 100644
+--- a/Batteries/Data/List/Perm.lean
++++ b/Batteries/Data/List/Perm.lean
+@@ -282,10 +282,12 @@ theorem Perm.union_right [BEq α] [LawfulBEq α] (t₁ : List α) (h : l₁ ~ l
+   | swap => apply perm_insert_swap
+   | trans _ _ ih_1 ih_2 => exact ih_1.trans ih_2
+ 
+-theorem Perm.union_left [BEq α] [LawfulBEq α] (l : List α) (h : t₁ ~ t₂) : l ∪ t₁ ~ l ∪ t₂ := by
++theorem Perm.union_left [BEq α] (l : List α) (h : t₁ ~ t₂) : l ∪ t₁ ~ l ∪ t₂ := by
+   induction l with
+-  | nil => simp only [nil_union, h]
+-  | cons _ _ ih => simp only [cons_union, Perm.insert _ ih]
++  | nil => exact h
++  | cons a _ ih =>
++    simp only [cons_union, List.insert, show elem a _ = elem a _ from ih.contains_eq]
++    split <;> simp [ih]
+ 
+ theorem Perm.union [BEq α] [LawfulBEq α] {l₁ l₂ t₁ t₂ : List α} (p₁ : l₁ ~ l₂) (p₂ : t₁ ~ t₂) :
+     l₁ ∪ t₁ ~ l₂ ∪ t₂ :=
+@@ -293,10 +295,10 @@ theorem Perm.union [BEq α] [LawfulBEq α] {l₁ l₂ t₁ t₂ : List α} (p₁
+ 
+ theorem Perm.inter_right [BEq α] (t₁ : List α) : l₁ ~ l₂ → l₁ ∩ t₁ ~ l₂ ∩ t₁ := .filter _
+ 
+-theorem Perm.inter_left [BEq α] [LawfulBEq α] (l : List α) (p : t₁ ~ t₂) : l ∩ t₁ = l ∩ t₂ :=
+-  filter_congr fun a _ => by simpa using p.mem_iff (a := a)
++theorem Perm.inter_left [BEq α] (l : List α) (p : t₁ ~ t₂) : l ∩ t₁ = l ∩ t₂ :=
++  filter_congr fun _ _ => p.contains_eq
+ 
+-theorem Perm.inter [BEq α] [LawfulBEq α] {l₁ l₂ t₁ t₂ : List α} (p₁ : l₁ ~ l₂) (p₂ : t₁ ~ t₂) :
++theorem Perm.inter [BEq α] {l₁ l₂ t₁ t₂ : List α} (p₁ : l₁ ~ l₂) (p₂ : t₁ ~ t₂) :
+     l₁ ∩ t₁ ~ l₂ ∩ t₂ :=
+   p₂.inter_left l₂ ▸ p₁.inter_right t₁
+ 
+diff --git a/Batteries/Data/Nat/Digits.lean b/Batteries/Data/Nat/Digits.lean
+index e573b616..62690122 100644
+--- a/Batteries/Data/Nat/Digits.lean
++++ b/Batteries/Data/Nat/Digits.lean
+@@ -190,7 +190,8 @@ public theorem toFinDigitsFixed_add [NeZero base] : toFinDigitsFixed n base (pre
+ public theorem toFinDigits_zero : toFinDigits 0 base = [] := by
+   rw [toFinDigits, dite_eq_left (.inl rfl)]
+ 
+-public theorem toFinDigits_of_ne_zero (h : 2 ≤ base) [NeZero base] (hn : n ≠ 0) :
++public theorem toFinDigits_of_ne_zero (h : 2 ≤ base) (hn : n ≠ 0) :
++    haveI : NeZero base := ⟨by omega⟩
+     toFinDigits n base = toFinDigits (n / base) base ++ [Fin.ofNat base n] := by
+   rw [toFinDigits, dite_eq_right (by omega)]
+ 
+@@ -205,9 +206,11 @@ public theorem toFinDigits_of_ne_zero (h : 2 ≤ base) [NeZero base] (hn : n ≠
+       rw [toFinDigits_of_ne_zero h hn, ofFinDigits_append, ih _ (Nat.div_lt_self (by omega) h)]
+       simp [Nat.div_add_mod']
+ 
+-public theorem toFinDigits_eq_append (h : 2 ≤ base) [NeZero base] (hk : base ^ k ≤ n) :
++public theorem toFinDigits_eq_append (h : 2 ≤ base) (hk : base ^ k ≤ n) :
++    haveI : NeZero base := ⟨by omega⟩
+     toFinDigits n base =
+       toFinDigits (n / base ^ k) base ++ toFinDigitsFixed (n % base ^ k) base k := by
++  have : NeZero base := ⟨by omega⟩
+   induction k generalizing n with
+   | zero => simp [Nat.mod_one]
+   | succ k ih =>
+@@ -300,13 +303,14 @@ public theorem toFinDigits_head?_ne_zero : ∀ d ∈ (toFinDigits n base).head?,
+         simp only [Option.none_or, List.head?_cons, Option.mem_def, Option.some_inj] at hd
+         rw [← hd, Fin.val_ofNat, Nat.mod_eq_of_lt this]; exact hn
+ 
+-public theorem toFinDigits_ofFinDigits (h : 2 ≤ base) {l : List (Fin base)}
++public theorem toFinDigits_ofFinDigits {l : List (Fin base)}
+     (hl : ∀ d ∈ l.head?, d.val ≠ 0) : toFinDigits (ofFinDigits l) base = l := by
+-  have : NeZero base := ⟨by omega⟩
+   match l with
+   | [] => simp [toFinDigits_zero]
+   | d :: l =>
+     have hd : d.val ≠ 0 := hl d rfl
++    have h : 2 ≤ base := by have := d.isLt; omega
++    have : NeZero base := ⟨by omega⟩
+     have hlt := ofFinDigits_lt_pow (l := l)
+     have hpos : 0 < base ^ l.length := Nat.pow_pos (by omega)
+     have hdiv : (d * base ^ l.length + ofFinDigits l) / base ^ l.length = d := by
+diff --git a/Batteries/Data/OrderedAssocList.lean b/Batteries/Data/OrderedAssocList.lean
+index 4e1d9098..758e6a52 100644
+--- a/Batteries/Data/OrderedAssocList.lean
++++ b/Batteries/Data/OrderedAssocList.lean
+@@ -273,7 +273,7 @@ theorem KeysOrdered.orderedInsert [LawfulEqCmp cmp] [OrientedCmp cmp] (h : KeysO
+ end
+ 
+ theorem toList_orderedInsert {α : Type u} {β : Type v} {cmp : α → α → Ordering}
+-    [LawfulEqCmp cmp] [TransCmp cmp] {l : AssocList α β} (h : KeysOrdered cmp l) (a : α) (b : β) :
++    [TransCmp cmp] {l : AssocList α β} (h : KeysOrdered cmp l) (a : α) (b : β) :
+     (orderedInsert cmp l a b).toList =
+       l.toList.filter (fun p => cmp a p.1 == .gt) ++
+         (a, b) :: l.toList.filter (fun p => cmp a p.1 == .lt) := by
+@@ -283,21 +283,14 @@ theorem toList_orderedInsert {α : Type u} {β : Type v} {cmp : α → α → Or
+     have tail_lt : ∀ p ∈ t.toList, cmp x p.1 = .lt := fun _ hp => h.lt_of_mem hp
+     simp only [orderedInsert_cons, toList, List.filter_cons]
+     match w : cmp a x with
+-    | .lt =>
++    | .lt | .eq =>
+       have all_lt : ∀ p ∈ t.toList, cmp a p.1 = .lt :=
+-        fun p hp => TransCmp.lt_trans w (tail_lt p hp)
++        fun p hp => TransCmp.lt_of_le_of_lt (by simp [w]) (tail_lt p hp)
+       have e1 : t.toList.filter (fun p => cmp a p.1 == .gt) = [] :=
+         List.filter_eq_nil_iff.mpr fun p hp => by simp [all_lt p hp]
+       have e2 : t.toList.filter (fun p => cmp a p.1 == .lt) = t.toList :=
+         List.filter_eq_self.mpr fun p hp => by simp [all_lt p hp]
+       simp [e1, e2]
+-    | .eq =>
+-      obtain rfl := LawfulEqCmp.eq_of_compare w
+-      have e1 : t.toList.filter (fun p => cmp a p.1 == .gt) = [] :=
+-        List.filter_eq_nil_iff.mpr fun p hp => by simp [tail_lt p hp]
+-      have e2 : t.toList.filter (fun p => cmp a p.1 == .lt) = t.toList :=
+-        List.filter_eq_self.mpr fun p hp => by simp [tail_lt p hp]
+-      simp [e1, e2]
+     | .gt => simp [ih h.tail]
+ 
+ theorem leHeadKey_filterMapVal [TransCmp cmp] (h : KeysOrdered cmp l) :
+@@ -353,6 +346,20 @@ def orderedMerge (cmp : α → α → Ordering) (f : α → Option β → Option
+       | none => orderedMerge cmp f (.cons a₁ b t₁) t₂
+ termination_by l₁ l₂ => l₁.length + l₂.length
+ 
++/-- `orderedMerge` never evaluates `f a none none`. -/
++private theorem orderedMerge_congr {cmp : α → α → Ordering}
++    {f f' : α → Option β → Option γ → Option δ}
++    (hf : ∀ a x y, (x.isSome || y.isSome) = true → f a x y = f' a x y) :
++    ∀ l₁ l₂, orderedMerge cmp f l₁ l₂ = orderedMerge cmp f' l₁ l₂
++  | .nil, .nil => by rw [orderedMerge, orderedMerge]
++  | .nil, .cons .. | .cons .., .nil => by
++    rw [orderedMerge, orderedMerge]; congr 1; funext; exact hf _ _ _ rfl
++  | .cons a₁ b t₁, .cons a₂ g t₂ => by
++    rw [orderedMerge, orderedMerge, hf a₁ (some b) none rfl, hf a₁ (some b) (some g) rfl,
++      hf a₂ none (some g) rfl, orderedMerge_congr hf t₁ (.cons a₂ g t₂),
++      orderedMerge_congr hf t₁ t₂, orderedMerge_congr hf (.cons a₁ b t₁) t₂]
++termination_by l₁ l₂ => l₁.length + l₂.length
++
+ theorem ltHeadKey_orderedMerge [TransCmp cmp]
+     (h₁ : LTHeadKey cmp a l₁) (h₂ : LTHeadKey cmp a l₂)
+     (w₁ : KeysOrdered cmp l₁) (w₂ : KeysOrdered cmp l₂) :
+@@ -385,7 +392,7 @@ theorem ltHeadKey_orderedMerge [TransCmp cmp]
+       · exact h₂
+       · exact ltHeadKey_orderedMerge h₁ (ltHeadKey_of_cons h₂ w₂) w₁ w₂.tail
+ 
+-theorem KeysOrdered.orderedMerge [LawfulEqCmp cmp] [TransCmp cmp]
++theorem KeysOrdered.orderedMerge [TransCmp cmp]
+     (h₁ : KeysOrdered cmp l₁) (h₂ : KeysOrdered cmp l₂) :
+     KeysOrdered cmp (AssocList.orderedMerge cmp f l₁ l₂) := by
+   match l₁, l₂ with
+@@ -410,9 +417,8 @@ theorem KeysOrdered.orderedMerge [LawfulEqCmp cmp] [TransCmp cmp]
+       | some d =>
+         dsimp
+         apply KeysOrdered.cons
+-        · rcases (LawfulEqCmp.eq_of_compare h) with rfl
+-          exact ltHeadKey_orderedMerge h₁.ltHeadKey
+-            h₂.ltHeadKey h₁.tail h₂.tail
++        · exact ltHeadKey_orderedMerge h₁.ltHeadKey
++            (ltHeadKey_of_le (by simp [h]) h₂.ltHeadKey) h₁.tail h₂.tail
+         · exact h₁.tail.orderedMerge h₂.tail
+       | none => exact h₁.tail.orderedMerge h₂.tail
+     | .gt => match (f a₂ none (some g)) with
+@@ -494,34 +500,37 @@ theorem orderedFind?_cons [TransCmp cmp]
+     orderedFind? cmp (.cons a b t) a = some b := by
+   simp [AssocList.orderedFind?, ReflCmp.compare_self]
+ 
+-theorem orderedFind?_orderedInsert {cmp : α → α → Ordering} [LawfulEqCmp cmp] [TransCmp cmp]
+-    (l : AssocList α β) (h : KeysOrdered cmp l) (a : α) (b : β) :
++theorem orderedFind?_orderedInsert {cmp : α → α → Ordering} [TransCmp cmp]
++    (l : AssocList α β) (a : α) (b : β) :
+     (orderedInsert cmp l a b).orderedFind? cmp x =
+       if cmp x a = .eq then some b else l.orderedFind? cmp x := by
+-  match l with
+-  | .nil =>
+-    simp only [orderedInsert, orderedFind?_cons, keysOrdered_cons_nil]
+-  | .cons a' b' t =>
+-    simp only [orderedInsert_cons]
+-    split <;> rename_i h₁
+-    · apply orderedFind?_cons
+-      exact ⟨h₁, h⟩
+-    · rcases LawfulEqCmp.eq_of_compare h₁
+-      rw [orderedFind?_cons h, orderedFind?_cons]
+-      · split <;> rfl
+-      · exact h
+-    · rw [orderedFind?_cons, orderedFind?_orderedInsert t h.tail, orderedFind?_cons h]
+-      · split <;> rename_i h₂
+-        · rcases (LawfulEqCmp.eq_of_compare h₂).symm
+-          simp_all [OrientedCmp.lt_of_gt]
+-        · rfl
+-      · exact h.orderedInsert_aux h₁
+-termination_by l.length
+-
+-theorem orderedFind?_orderedInsert_self {cmp : α → α → Ordering} [LawfulEqCmp cmp] [TransCmp cmp]
+-    (l : AssocList α β) (h : KeysOrdered cmp l)  (a : α) (b : β) :
++  induction l with
++  | nil => cases h : cmp x a <;> simp [orderedInsert, orderedFind?, h]
++  | cons k v t ih =>
++    rw [orderedInsert_cons]
++    split <;> rename_i w
++    · cases h : cmp x a
++      · simp [orderedFind?, h, TransCmp.lt_trans h w]
++      · simp [orderedFind?, h]
++      · simp [orderedFind?, h]
++    · cases h : cmp x a
++      · simp [orderedFind?, h, TransCmp.lt_of_lt_of_eq h w]
++      · simp [orderedFind?, h]
++      · simp [orderedFind?, h, TransCmp.gt_of_gt_of_eq h w]
++    · have w' := OrientedCmp.lt_of_gt w
++      cases h : cmp x k
++      · simp [orderedFind?, h, TransCmp.lt_trans h w']
++      · simp [orderedFind?, h, TransCmp.lt_of_eq_of_lt h w']
++      · simp [orderedFind?, h, ih]
++
++theorem orderedFind?_orderedInsert_self {cmp : α → α → Ordering} [ReflCmp cmp]
++    (l : AssocList α β) (a : α) (b : β) :
+     (orderedInsert cmp l a b).orderedFind? cmp a = some b := by
+-  simp [h, orderedFind?_orderedInsert, ReflCmp.compare_self]
++  induction l with
++  | nil => simp [orderedInsert, orderedFind?, ReflCmp.compare_self]
++  | cons k v t ih =>
++    rw [orderedInsert_cons]
++    split <;> rename_i w <;> simp [orderedFind?, ReflCmp.compare_self, w, ih]
+ 
+ /--
+ If two `AssocList`s have ordered keys
+@@ -601,24 +610,13 @@ theorem orderedFind?_filterMapVal {cmp : α → α → Ordering} [LawfulEqCmp cm
+           h.tail.filterMapVal
+ termination_by l.length
+ 
+-theorem filterMapVal_filterMapVal {cmp : α → α → Ordering} [LawfulEqCmp cmp] [TransCmp cmp]
+-    {f : α → γ → Option δ} {g : α → β → Option γ}
+-    {l : AssocList α β} (h : KeysOrdered cmp l) :
++theorem filterMapVal_filterMapVal {f : α → γ → Option δ} {g : α → β → Option γ}
++    {l : AssocList α β} :
+     filterMapVal f (filterMapVal g l) =
+       filterMapVal (fun a b => (g a b).bind (fun c => f a c)) l := by
+-  apply ext_orderedFind? (cmp := cmp)
+-  · exact h.filterMapVal.filterMapVal
+-  · exact h.filterMapVal
+-  · intro a
+-    rw [orderedFind?_filterMapVal, orderedFind?_filterMapVal h, orderedFind?_filterMapVal h]
+-    · ext d
+-      simp only [Option.bind_eq_some_iff]
+-      constructor
+-      · rintro ⟨c, ⟨⟨b, hb, hc⟩, hd⟩⟩
+-        refine ⟨b, hb, c, hc, hd⟩
+-      · rintro ⟨b, hb, c, hc, hd⟩
+-        refine ⟨c, ⟨⟨b, hb, hc⟩, hd⟩⟩
+-    · exact h.filterMapVal
++  induction l with
++  | nil => rfl
++  | cons k v t ih => cases h : g k v <;> simp [filterMapVal_cons, h, ih]
+ 
+ end AssocList
+ 
+@@ -665,8 +663,8 @@ def tail (l : OrderedAssocList cmp β) : OrderedAssocList cmp β :=
+   | ⟨.nil, _⟩ => l
+   | ⟨.cons _ _ t, h⟩ => ⟨t, h.tail⟩
+ 
+-@[simp] theorem toAssocList_tail_mk_nil {h} :
+-    (tail (⟨.nil, h⟩ : OrderedAssocList cmp β)).toAssocList = .nil := rfl
++@[simp] theorem toAssocList_tail_mk_nil :
++    (tail (⟨.nil, trivial⟩ : OrderedAssocList cmp β)).toAssocList = .nil := rfl
+ @[simp] theorem toAssocList_tail_mk_cons {h} :
+     (tail (⟨.cons a b t, h⟩ : OrderedAssocList cmp β)).toAssocList = t := rfl
+ 
+@@ -692,7 +690,8 @@ instance : GetElem? (OrderedAssocList cmp β) α β (fun l a => l.contains a) wh
+   getElem l a h := (l.find? a).get h
+ 
+ @[simp] theorem getElem?_nil {x : α} : (nil : OrderedAssocList cmp β)[x]? = none := rfl
+-@[simp] theorem getElem?_mk_nil {x : α} : (⟨.nil, h⟩ : OrderedAssocList cmp β)[x]? = none := rfl
++@[simp] theorem getElem?_mk_nil {x : α} :
++    (⟨.nil, trivial⟩ : OrderedAssocList cmp β)[x]? = none := rfl
+ 
+ theorem contains_eq_isSome_getElem? {l : OrderedAssocList cmp β} :
+     l.contains a = l[a]?.isSome := rfl
+@@ -796,7 +795,7 @@ def insert (l : OrderedAssocList cmp β) (a : α) (b : β) : OrderedAssocList cm
+     (insert l a b).toAssocList = l.toAssocList.orderedInsert cmp a b := rfl
+ 
+ @[simp] theorem insert_mk_nil :
+-    insert (⟨.nil, h⟩ : OrderedAssocList cmp β) a b =
++    insert (⟨.nil, trivial⟩ : OrderedAssocList cmp β) a b =
+       ⟨.cons a b .nil, AssocList.keysOrdered_cons_nil⟩ := rfl
+ 
+ @[simp] theorem insert_mk_cons :
+@@ -823,7 +822,7 @@ variable [TransCmp cmp]
+ 
+ theorem getElem?_insert (l : OrderedAssocList cmp β) (a : α) (b : β) :
+     (insert l a b)[x]? = if cmp x a = .eq then some b else l[x]? :=
+-  AssocList.orderedFind?_orderedInsert l.toAssocList l.keysOrdered a b
++  AssocList.orderedFind?_orderedInsert l.toAssocList a b
+ 
+ theorem getElem?_insert_self (l : OrderedAssocList cmp β) (a : α) (b : β) :
+     (insert l a b)[a]? = some b := by
+@@ -863,19 +862,18 @@ theorem getElem?_filterMapVal [LawfulEqCmp cmp] (l : OrderedAssocList cmp β) :
+     (filterMapVal f l)[a]? = l[a]?.bind (fun b => f a b) :=
+   AssocList.orderedFind?_filterMapVal l.keysOrdered
+ 
+-theorem filterMapVal_filterMapVal [LawfulEqCmp cmp]
++theorem filterMapVal_filterMapVal
+     {f : α → γ → Option δ} {g : α → β → Option γ}
+     {l : OrderedAssocList cmp β} :
+     filterMapVal f (filterMapVal g l) =
+-      filterMapVal (fun a b => (g a b).bind (fun c => f a c)) l := by
+-  apply ext_toAssocList
+-  exact AssocList.filterMapVal_filterMapVal l.keysOrdered
++      filterMapVal (fun a b => (g a b).bind (fun c => f a c)) l :=
++  ext_toAssocList AssocList.filterMapVal_filterMapVal
+ 
+ end filterMapVal
+ 
+ section merge
+ 
+-variable [LawfulEqCmp cmp] [TransCmp cmp]
++variable [TransCmp cmp]
+ 
+ /--
+ Merge two `OrderedAssocList`s using a function `α → Option β → Option γ → Option δ`,
+@@ -896,13 +894,13 @@ def merge (f : α → Option β → Option γ → Option δ)
+   simp [AssocList.orderedMerge]
+ 
+ @[simp] theorem merge_mk_nil_mk_cons {f : α → Option β → Option γ → Option δ} :
+-    merge f (⟨.nil, h⟩ : OrderedAssocList cmp β) ⟨.cons x' y' t', h'⟩ =
+-      filterMapVal (fun a g => f a none (some g)) ⟨.cons x' y' t', h'⟩ := by
++    merge f (⟨.nil, trivial⟩ : OrderedAssocList cmp β) ⟨.cons x' y' t', h⟩ =
++      filterMapVal (fun a g => f a none (some g)) ⟨.cons x' y' t', h⟩ := by
+   simp [merge, AssocList.orderedMerge]
+   rfl
+ 
+ @[simp] theorem merge_mk_cons_mk_nil {f : α → Option β → Option γ → Option δ} :
+-    merge f ⟨.cons x y t, h⟩ (⟨.nil, h'⟩ : OrderedAssocList cmp γ) =
++    merge f ⟨.cons x y t, h⟩ (⟨.nil, trivial⟩ : OrderedAssocList cmp γ) =
+       filterMapVal (fun a b => f a (some b) none) ⟨.cons x y t, h⟩ := by
+   simp [merge, AssocList.orderedMerge]
+   rfl
+@@ -952,6 +950,8 @@ private theorem merge_mk_cons_mk_cons {f : α → Option β → Option γ → Op
+             simp only [← p]
+             exact (merge f _ _).keysOrdered⟩ := by grind +locals
+ 
++variable [LawfulEqCmp cmp]
++
+ @[simp] theorem getElem?_merge {f : α → Option β → Option γ → Option δ}
+     (hf : f a none none = none) {l₁ : OrderedAssocList cmp β} {l₂} :
+     (merge f l₁ l₂)[a]? = f a l₁[a]? l₂[a]? := by
+@@ -1023,23 +1023,56 @@ private theorem merge_mk_cons_mk_cons {f : α → Option β → Option γ → Op
+ 
+ theorem merge_comm
+     (f : α → Option β → Option γ → Option δ) (g : α → Option γ → Option β → Option δ)
+-    (hg : ∀ a, g a none none = none)
+     (w : ∀ a x y, f a x y = g a y x)
+     (l₁ : OrderedAssocList cmp β) (l₂) : merge f l₁ l₂ = merge g l₂ l₁ := by
++  let g' a y x := if (y.isSome || x.isSome) then g a y x else none
++  have e₁ : merge f l₁ l₂ = merge (fun a x y => g' a y x) l₁ l₂ :=
++    ext_toAssocList <| AssocList.orderedMerge_congr (by simp +contextual [g', w, Bool.or_comm]) ..
++  have e₂ : merge g l₂ l₁ = merge g' l₂ l₁ :=
++    ext_toAssocList <| AssocList.orderedMerge_congr (by simp +contextual [g']) ..
++  rw [e₁, e₂]
+   ext
+-  simp [w, hg]
++  simp [g']
+ 
+-theorem merge_assoc
++/-- Associativity of `merge`. The condition `g₂ a none none = none` follows from the others;
++see `merge_assoc_right` for the version assuming it instead of `f₂ a none none = none`. -/
++theorem merge_assoc_left
+     (f₁ : α → Option β₁ → Option β₂ → Option γ₁) (f₂ : α → Option γ₁ → Option β₃ → Option ε)
+     (g₁ : α → Option β₂ → Option β₃ → Option γ₂) (g₂ : α → Option β₁ → Option γ₂ → Option ε)
+     (hf₁ : ∀ a, f₁ a none none = none) (hf₂ : ∀ a, f₂ a none none = none)
+-    (hg₁ : ∀ a, g₁ a none none = none) (hg₂ : ∀ a, g₂ a none none = none)
++    (hg₁ : ∀ a, g₁ a none none = none)
+     (w : ∀ a x y z, f₂ a (f₁ a x y) z = g₂ a x (g₁ a y z))
+     (l₁ : OrderedAssocList cmp β₁) (l₂) (l₃) :
+     merge f₂ (merge f₁ l₁ l₂) l₃ = merge g₂ l₁ (merge g₁ l₂ l₃) := by
++  have hg₂ a : g₂ a none none = none := by simpa [hf₁, hf₂, hg₁] using (w a none none none).symm
+   ext
+   simp [w, hf₁, hf₂, hg₁, hg₂]
+ 
++/-- Associativity of `merge`. The condition `f₂ a none none = none` follows from the others;
++see `merge_assoc_left` for the version assuming it instead of `g₂ a none none = none`. -/
++theorem merge_assoc_right
++    (f₁ : α → Option β₁ → Option β₂ → Option γ₁) (f₂ : α → Option γ₁ → Option β₃ → Option ε)
++    (g₁ : α → Option β₂ → Option β₃ → Option γ₂) (g₂ : α → Option β₁ → Option γ₂ → Option ε)
++    (hf₁ : ∀ a, f₁ a none none = none) (hg₁ : ∀ a, g₁ a none none = none)
++    (hg₂ : ∀ a, g₂ a none none = none)
++    (w : ∀ a x y z, f₂ a (f₁ a x y) z = g₂ a x (g₁ a y z))
++    (l₁ : OrderedAssocList cmp β₁) (l₂) (l₃) :
++    merge f₂ (merge f₁ l₁ l₂) l₃ = merge g₂ l₁ (merge g₁ l₂ l₃) := by
++  have hf₂ a : f₂ a none none = none := by simpa [hf₁, hg₁, hg₂] using w a none none none
++  ext
++  simp [w, hf₁, hf₂, hg₁, hg₂]
++
++@[deprecated merge_assoc_left +typeChanged (since := "2026-11-10")]
++theorem merge_assoc
++    (f₁ : α → Option β₁ → Option β₂ → Option γ₁) (f₂ : α → Option γ₁ → Option β₃ → Option ε)
++    (g₁ : α → Option β₂ → Option β₃ → Option γ₂) (g₂ : α → Option β₁ → Option γ₂ → Option ε)
++    (hf₁ : ∀ a, f₁ a none none = none) (hf₂ : ∀ a, f₂ a none none = none)
++    (hg₁ : ∀ a, g₁ a none none = none) (_ : ∀ a, g₂ a none none = none)
++    (w : ∀ a x y z, f₂ a (f₁ a x y) z = g₂ a x (g₁ a y z))
++    (l₁ : OrderedAssocList cmp β₁) (l₂) (l₃) :
++    merge f₂ (merge f₁ l₁ l₂) l₃ = merge g₂ l₁ (merge g₁ l₂ l₃) :=
++  merge_assoc_left f₁ f₂ g₁ g₂ hf₁ hf₂ hg₁ w l₁ l₂ l₃
++
+ /--
+ Add two `OrderedAssocList`s, taking the value from one list if the other value is missing.
+ (That is, treating missing values as `0`.)
+diff --git a/Batteries/Data/String/Lemmas.lean b/Batteries/Data/String/Lemmas.lean
+index dbdad851..44d42d28 100644
+--- a/Batteries/Data/String/Lemmas.lean
++++ b/Batteries/Data/String/Lemmas.lean
+@@ -640,15 +640,19 @@ theorem nextn : ∀ {it}, ValidFor l r it →
+     simpa using h.next.nextn _ (Nat.le_of_succ_le_succ hn)
+ 
+ theorem prevn : ∀ {it}, ValidFor l r it →
+-      ∀ n, n ≤ l.length → ValidFor (l.drop n) ((l.take n).reverse ++ r) (it.prevn n)
+-  | it, h, 0, _ => by simp [h, Iterator.prevn]
+-  | it, h, n+1, hn => by
++      ∀ n, ValidFor (l.drop n) ((l.take n).reverse ++ r) (it.prevn n)
++  | it, h, 0 => by simp [h, Iterator.prevn]
++  | it, h, n+1 => by
+     simp only [Iterator.prevn]
+-    have a::l := l
+-    simpa using h.prev.prevn _ (Nat.le_of_succ_le_succ hn)
++    match l, h with
++    | [], h => simpa using h.prev_nil.prevn n
++    | _ :: _, h => simpa using h.prev.prevn n
+ 
+ end ValidFor
+ 
++theorem remainingBytes_le (it : Iterator) : it.remainingBytes ≤ utf8ByteSize it.s :=
++  Nat.sub_le ..
++
+ namespace Valid
+ 
+ theorem validFor : ∀ {it}, Valid it → ∃ l r, ValidFor l r it
+@@ -657,10 +661,9 @@ theorem validFor : ∀ {it}, Valid it → ∃ l r, ValidFor l r it
+ 
+ theorem _root_.String.valid_mkIterator (s) : (mkIterator s).Valid := s.validFor_mkIterator.valid
+ 
++@[deprecated Iterator.remainingBytes_le +typeChanged (since := "2026-11-10")]
+ theorem remainingBytes_le : ∀ {it}, Valid it → it.remainingBytes ≤ utf8ByteSize it.s
+-  | _, h =>
+-    let ⟨l, r, h⟩ := h.validFor
+-    by simp [utf8ByteSize_ofList, h.remainingBytes, h.toString, Nat.le_add_left]
++  | it, _ => it.remainingBytes_le
+ 
+ theorem next : ∀ {it}, Valid it → it.hasNext → Valid it.next
+   | _, h, hn => by
+@@ -1035,6 +1038,118 @@ theorem dropWhile (p : Char → Bool) : ∀ {s}, ValidFor l m r s →
+ 
+ end ValidFor
+ 
++/-- What `extract.go₂` returns is a prefix of its input whose inner positions avoid the stop. -/
++private theorem extract_go₂_prefix : ∀ (cs : List Char) (i e : String.Pos.Raw),
++    ∃ t, cs = String.Pos.Raw.extract.go₂ cs i e ++ t ∧
++      ∀ m₁ c m₂, String.Pos.Raw.extract.go₂ cs i e = m₁ ++ c :: m₂ →
++        i.byteIdx + utf8Len m₁ ≠ e.byteIdx
++  | [], i, e => ⟨[], by simp [String.Pos.Raw.extract.go₂]⟩
++  | c :: cs, i, e => by
++    by_cases h : i = e
++    · exact ⟨c :: cs, by simp [String.Pos.Raw.extract.go₂, h]⟩
++    · obtain ⟨t, ht, hm⟩ := extract_go₂_prefix cs (i + c) e
++      refine ⟨t, by simpa [String.Pos.Raw.extract.go₂, h] using ht, ?_⟩
++      intro m₁ d m₂ hm₁
++      simp only [String.Pos.Raw.extract.go₂, h, ite_false] at hm₁
++      match m₁, hm₁ with
++      | [], _ => exact fun he => h (String.Pos.Raw.ext (by simpa using he))
++      | d' :: m₁', hm₁ =>
++        simp only [List.cons_append, List.cons.injEq] at hm₁
++        have := hm m₁' d m₂ hm₁.2
++        simp only [utf8Len_cons, String.Pos.Raw.byteIdx_add_char] at this ⊢
++        rw [← hm₁.1]; omega
++
++/-- `extract.go₁` returns a sublist starting after a prefix of byte length `b`. -/
++private theorem extract_go₁_prefix : ∀ (cs : List Char) (i b e : String.Pos.Raw),
++    String.Pos.Raw.extract.go₁ cs i b e ≠ [] →
++    ∃ l t, cs = l ++ String.Pos.Raw.extract.go₁ cs i b e ++ t ∧
++      b.byteIdx = i.byteIdx + utf8Len l ∧
++      ∀ m₁ c m₂, String.Pos.Raw.extract.go₁ cs i b e = m₁ ++ c :: m₂ →
++        b.byteIdx + utf8Len m₁ ≠ e.byteIdx
++  | [], _, _, _, hne => by simp [String.Pos.Raw.extract.go₁] at hne
++  | c :: cs, i, b, e, hne => by
++    by_cases h : i = b
++    · subst h
++      obtain ⟨t, ht, hm⟩ := extract_go₂_prefix (c :: cs) i e
++      simp only [String.Pos.Raw.extract.go₁, ite_true]
++      exact ⟨[], t, by simpa using ht, by simp, hm⟩
++    · simp only [String.Pos.Raw.extract.go₁, h, ite_false] at hne ⊢
++      obtain ⟨l, t, h₁, h₂, h₃⟩ := extract_go₁_prefix cs (i + c) b e hne
++      refine ⟨c :: l, t, by simpa using h₁, ?_, h₃⟩
++      simp only [utf8Len_cons, String.Pos.Raw.byteIdx_add_char] at h₂ ⊢; omega
++
++/-- A substring with nonempty `toString` is described by a `ValidFor` substring with the same
++string and start position, and no inner position of its `toString` is the stop position. -/
++private theorem exists_validFor_of_toString (s : Substring.Raw) (hne : s.toString.toList ≠ []) :
++    ∃ l t, ValidFor l s.toString.toList t
++      ⟨s.str, s.startPos, ⟨s.startPos.byteIdx + utf8Len s.toString.toList⟩⟩ ∧
++    ∀ m₁ c m₂, s.toString.toList = m₁ ++ c :: m₂ →
++      s.startPos.byteIdx + utf8Len m₁ ≠ s.stopPos.byteIdx := by
++  obtain ⟨str, b, e⟩ := s
++  simp only [Substring.Raw.toString, String.Pos.Raw.extract] at hne ⊢
++  split at hne
++  · simp at hne
++  · rename_i hbe
++    simp only [hbe, ite_false, String.toList_ofList] at hne ⊢
++    obtain ⟨l, t, h₁, h₂, h₃⟩ := extract_go₁_prefix str.toList 0 b e hne
++    exact ⟨l, t, .of_eq _ h₁ (by simpa using h₂) (by simp [h₂]), h₃⟩
++
++theorem get_of_toList_toString_eq {s : Substring.Raw} (e : s.toString.toList = m₁ ++ c :: m₂) :
++    s.get ⟨utf8Len m₁⟩ = c := by
++  obtain ⟨l, t, hv, -⟩ := exists_validFor_of_toString s (by simp [e])
++  rw [e] at hv
++  exact hv.get
++
++theorem front_of_toList_toString_eq {s : Substring.Raw} (e : s.toString.toList = c :: m) :
++    s.front = c :=
++  get_of_toList_toString_eq (m₁ := []) e
++
++theorem next_of_toList_toString_eq {s : Substring.Raw} (e : s.toString.toList = m₁ ++ c :: m₂) :
++    s.next ⟨utf8Len m₁⟩ = ⟨utf8Len m₁ + c.utf8Size⟩ := by
++  obtain ⟨l, t, hv, hne⟩ := exists_validFor_of_toString s (by simp [e])
++  have hne := hne m₁ c m₂ e
++  rw [e] at hv
++  obtain ⟨str, b, st⟩ := s
++  have := hv.next
++  simp only [Substring.Raw.next] at this ⊢
++  have h₁ : ¬ (⟨utf8Len m₁⟩ : String.Pos.Raw).offsetBy b = st := by
++    intro h; apply hne; rw [← h]; simp [String.Pos.Raw.offsetBy]
++  have h₂ : ¬ (⟨utf8Len m₁⟩ : String.Pos.Raw).offsetBy b =
++      ⟨b.byteIdx + utf8Len (m₁ ++ c :: m₂)⟩ := by
++    intro h; have := congrArg String.Pos.Raw.byteIdx h
++    simp [String.Pos.Raw.offsetBy] at this; have := c.utf8Size_pos; omega
++  rw [if_neg h₂] at this; rwa [if_neg h₁]
++
++theorem prev_of_toList_toString_eq {s : Substring.Raw} (e : s.toString.toList = m₁ ++ c :: m₂) :
++    s.prev ⟨utf8Len m₁ + c.utf8Size⟩ = ⟨utf8Len m₁⟩ := by
++  obtain ⟨l, t, hv, -⟩ := exists_validFor_of_toString s (by simp [e])
++  rw [e] at hv
++  exact hv.prev
++
++theorem prevn_of_toList_toString_eq {s : Substring.Raw}
++    (e : s.toString.toList = m₁.reverse ++ m₂) (n : Nat) :
++    s.prevn n ⟨utf8Len m₁⟩ = ⟨utf8Len (m₁.drop n)⟩ := by
++  by_cases hne : s.toString.toList = []
++  · rw [hne] at e
++    obtain ⟨h₁, -⟩ := List.append_eq_nil_iff.1 e.symm
++    obtain rfl : m₁ = [] := List.reverse_eq_nil_iff.1 h₁
++    induction n with
++    | zero => rfl
++    | succ n ih =>
++      simp only [Substring.Raw.prevn] at ih ⊢
++      rw [show s.prev ⟨utf8Len []⟩ = ⟨utf8Len []⟩ by
++        simp [Substring.Raw.prev, String.Pos.Raw.offsetBy]]
++      simp
++  · obtain ⟨l, t, hv, -⟩ := exists_validFor_of_toString s hne
++    rw [e] at hv
++    obtain ⟨str, b, st⟩ := s
++    have key : ∀ n p, (⟨str, b, st⟩ : Substring.Raw).prevn n p =
++        (⟨str, b, ⟨b.byteIdx + utf8Len (m₁.reverse ++ m₂)⟩⟩ : Substring.Raw).prevn n p := by
++      intro n; induction n with
++      | zero => intro; rfl
++      | succ n ih => intro; exact ih _
++    rw [key]; exact hv.prevn n
++
+ namespace Valid
+ 
+ theorem validFor : ∀ {s}, Valid s → ∃ l m r, ValidFor l m r s
+@@ -1066,25 +1181,22 @@ theorem bsize : ∀ {s}, Valid s → s.bsize = utf8Len s.toString.toList
+ theorem isEmpty : ∀ {s}, Valid s → (s.isEmpty ↔ s.toString = "")
+   | _, h => let ⟨l, m, r, h⟩ := h.validFor; by simp [h.isEmpty, h.toString, String.ext_iff]
+ 
++@[deprecated get_of_toList_toString_eq +typeChanged (since := "2026-11-10")]
+ theorem get : ∀ {s}, Valid s → s.toString.toList = m₁ ++ c :: m₂ → s.get ⟨utf8Len m₁⟩ = c
+-  | _, h, e => by
+-    let ⟨l, m, r, h⟩ := h.validFor
+-    simp only [h.toString, String.toList_ofList] at e; subst e; simp [h.get]
++  | _, _, e => get_of_toList_toString_eq e
+ 
++@[deprecated next_of_toList_toString_eq +typeChanged (since := "2026-11-10")]
+ theorem next : ∀ {s}, Valid s → s.toString.toList = m₁ ++ c :: m₂ →
+     s.next ⟨utf8Len m₁⟩ = ⟨utf8Len m₁ + c.utf8Size⟩
+-  | _, h, e => by
+-    let ⟨l, m, r, h⟩ := h.validFor
+-    simp only [h.toString, String.toList_ofList] at e; subst e; simp [h.next]
++  | _, _, e => next_of_toList_toString_eq e
+ 
+ theorem next_stop : ∀ {s}, Valid s → s.next ⟨s.bsize⟩ = ⟨s.bsize⟩
+   | _, h => let ⟨l, m, r, h⟩ := h.validFor; by simp [h.bsize, h.next_stop]
+ 
++@[deprecated prev_of_toList_toString_eq +typeChanged (since := "2026-11-10")]
+ theorem prev : ∀ {s}, Valid s → s.toString.toList = m₁ ++ c :: m₂ →
+     s.prev ⟨utf8Len m₁ + c.utf8Size⟩ = ⟨utf8Len m₁⟩
+-  | _, h, e => by
+-    let ⟨l, m, r, h⟩ := h.validFor
+-    simp only [h.toString, String.toList_ofList] at e; subst e; simp [h.prev]
++  | _, _, e => prev_of_toList_toString_eq e
+ 
+ theorem nextn_stop : ∀ {s}, Valid s → ∀ n, s.nextn n ⟨s.bsize⟩ = ⟨s.bsize⟩
+   | _, h, n => let ⟨l, m, r, h⟩ := h.validFor; by simp [h.bsize, h.nextn_stop]
+@@ -1095,14 +1207,14 @@ theorem nextn : ∀ {s}, Valid s → s.toString.toList = m₁ ++ m₂ →
+     let ⟨l, m, r, h⟩ := h.validFor
+     simp only [h.toString, String.toList_ofList] at e; subst e; simp [h.nextn]
+ 
++@[deprecated prevn_of_toList_toString_eq +typeChanged (since := "2026-11-10")]
+ theorem prevn : ∀ {s}, Valid s → s.toString.toList = m₁.reverse ++ m₂ →
+     ∀ n, s.prevn n ⟨utf8Len m₁⟩ = ⟨utf8Len (m₁.drop n)⟩
+-  | _, h, e => by
+-    let ⟨l, m, r, h⟩ := h.validFor
+-    simp only [h.toString, String.toList_ofList] at e; subst e; simp [h.prevn]
++  | _, _, e => prevn_of_toList_toString_eq e
+ 
++@[deprecated front_of_toList_toString_eq +typeChanged (since := "2026-11-10")]
+ theorem front : ∀ {s}, Valid s → s.toString.toList = c :: m → s.front = c
+-  | _, h => h.get (m₁ := [])
++  | _, _, e => front_of_toList_toString_eq e
+ 
+ theorem drop : ∀ {s}, Valid s → ∀ n, Valid (s.drop n)
+   | _, h, _ => let ⟨_, _, _, h⟩ := h.validFor; (h.drop _).valid
+diff --git a/Batteries/Data/Vector/Basic.lean b/Batteries/Data/Vector/Basic.lean
+index 97311252..a65490f9 100644
+--- a/Batteries/Data/Vector/Basic.lean
++++ b/Batteries/Data/Vector/Basic.lean
+@@ -30,10 +30,10 @@ Set an element of a vector using a `USize` index and a proof that the index is w
+ def uset (xs : Vector α n) (i : USize) (v : α) (h : i.toNat < n) : Vector α n :=
+   ⟨xs.toArray.uset i v (xs.size_toArray.symm ▸ h), by simp⟩
+ 
+-private theorem USize.succ_toNat_of_lt {start stop : USize} {n : Nat}
+-    (h_lt : start < stop) (h_stop : stop.toNat ≤ n) (h_su : n < USize.size) :
++private theorem USize.succ_toNat_of_lt {start stop : USize} (h_lt : start < stop) :
+     (start + 1).toNat = start.toNat + 1 := by
+   have h_lt_nat := USize.lt_iff_toNat_lt.mp h_lt
++  have := stop.toNat_lt_size
+   cases System.Platform.numBits_eq
+   all_goals
+     simp_all only [USize.size, USize.toNat_add, USize.reduceToNat]
+@@ -52,7 +52,7 @@ where
+       (h_i : i.toNat ≤ n) (acc : Vector β i.toNat) : m (Vector β (n + 1)) := do
+     if h_lt : i < n_usize then
+       have h_lt_nat : i.toNat < n := by rw [← h_n]; exact USize.lt_iff_toNat_lt.mp h_lt
+-      have h_inc : (i + 1).toNat = i.toNat + 1 := USize.succ_toNat_of_lt h_lt (by omega) h_su
++      have h_inc : (i + 1).toNat = i.toNat + 1 := USize.succ_toNat_of_lt h_lt
+       let next ← f cur (as.uget i (by omega))
+       loop next (i + 1) n_usize h_n (by omega) (acc.push cur |>.cast h_inc.symm)
+     else
+diff --git a/Batteries/Data/Vector/Lemmas.lean b/Batteries/Data/Vector/Lemmas.lean
+index 2fa8b6c2..a464bc12 100644
+--- a/Batteries/Data/Vector/Lemmas.lean
++++ b/Batteries/Data/Vector/Lemmas.lean
+@@ -148,10 +148,10 @@ theorem isNone_finIdxOf? [BEq α] [PartialEquivBEq α] {v : Vector α n} {a : α
+   simp
+ 
+ private theorem scanlM.loop_toArray [Monad m] [LawfulMonad m] (f : β → α → m β) (as : Vector α n)
+-    (h_stop : n ≤ as.toArray.size) (i : Nat) (hi : i ≤ n) (cur : β)
++    (i : Nat) (hi : i ≤ n) (cur : β)
+     (acc_v : Vector β i) (acc_a : Array β) (h_acc : acc_v.toArray = acc_a) :
+     Vector.toArray <$> Vector.scanlM.loop f as cur i hi acc_v =
+-    Array.scanlM.loop f cur as.toArray i n h_stop acc_a := by
++    Array.scanlM.loop f cur as.toArray i n (by simp) acc_a := by
+   induction h_term : n - i generalizing i cur acc_v acc_a with
+   | zero =>
+     unfold Vector.scanlM.loop Array.scanlM.loop
+@@ -207,16 +207,14 @@ theorem toList_scanrM [Monad m] [LawfulMonad m] {f : α → β → m β} {as : V
+   simp only [toArray_scanrM, Array.toList_scanrM, toList_toArray]
+ 
+ @[simp, grind =]
+-theorem scanlM_empty [Monad m] [LawfulMonad m] {f : β → α → m β} :
++theorem scanlM_empty [Monad m] {f : β → α → m β} :
+     (#v[] : Vector α 0).scanlM f init = pure #v[init] := by
+-  rw [← _root_.map_inj_right toArray_inj.mp, toArray_scanlM]
+-  simp [Array.scanlM_empty]
++  simp [scanlM, scanlM.loop]
+ 
+ @[simp, grind =]
+-theorem scanrM_empty [Monad m] [LawfulMonad m] {f : α → β → m β} :
++theorem scanrM_empty [Monad m] {f : α → β → m β} :
+     (#v[] : Vector α 0).scanrM f init = pure #v[init] := by
+-  rw [← _root_.map_inj_right toArray_inj.mp, toArray_scanrM]
+-  simp [Array.scanrM_empty]
++  simp [scanrM, scanrM.loop]
+ 
+ theorem scanlM_reverse [Monad m] [LawfulMonad m] {f : β → α → m β} {as : Vector α n} :
+     as.reverse.scanlM f init = Vector.reverse <$> (as.scanrM (flip f) init) := by
+@@ -247,16 +245,21 @@ theorem idRun_scanrM {f : α → β → Id β} {as : Vector α n} :
+   scanrM_pure
+ 
+ @[grind =]
+-theorem scanlM_map [Monad m] [LawfulMonad m] {f : α₁ → α₂} {g : β → α₂ → m β} {as : Vector α₁ n} :
++theorem scanlM_map [Monad m] {f : α₁ → α₂} {g : β → α₂ → m β} {as : Vector α₁ n} :
+     (as.map f).scanlM g init = as.scanlM (g · <| f ·) init := by
+-  rw [← _root_.map_inj_right toArray_inj.mp]
+-  simp only [toArray_scanlM, toArray_map, Array.scanlM_map]
++  suffices ∀ cur i hi acc, scanlM.loop g (as.map f) cur i hi acc =
++      scanlM.loop (g · <| f ·) as cur i hi acc from this ..
++  intro cur i hi acc
++  fun_induction scanlM.loop (g · <| f ·) as cur i hi acc <;> rw [scanlM.loop] <;> simp_all
+ 
+ @[grind =]
+-theorem scanrM_map [Monad m] [LawfulMonad m] {f : α₁ → α₂} {g : α₂ → β → m β} {as : Vector α₁ n} :
++theorem scanrM_map [Monad m] {f : α₁ → α₂} {g : α₂ → β → m β} {as : Vector α₁ n} :
+     (as.map f).scanrM g init = as.scanrM (fun a b => g (f a) b) init := by
+-  rw [← _root_.map_inj_right toArray_inj.mp]
+-  simp only [toArray_scanrM, toArray_map, Array.scanrM_map]
++  suffices ∀ cur i hi acc, scanrM.loop g (as.map f) cur i hi acc =
++      scanrM.loop (fun a b => g (f a) b) as cur i hi acc from this ..
++  intro cur i hi acc
++  fun_induction scanrM.loop (fun a b => g (f a) b) as cur i hi acc <;> rw [scanrM.loop] <;>
++    simp_all
+ 
+ /-! ### scanl/scanr lemmas -/
+ 
+diff --git a/Batteries/Util/Cache.lean b/Batteries/Util/Cache.lean
+index 3aa08d7a..cac38a60 100644
+--- a/Batteries/Util/Cache.lean
++++ b/Batteries/Util/Cache.lean
+@@ -85,7 +85,8 @@ structure DeclCache (α : Type) where mk' ::
+   /-- Function for adding a declaration from the library to the cache.
+   Defaults to the same behaviour as adding a declaration from the current file. -/
+   addLibraryDecl : Name → ConstantInfo → α → MetaM α := addDecl
+-  deriving Nonempty
++
++instance : Nonempty (DeclCache α) := ⟨⟨Classical.ofNonempty, fun _ _ => pure, fun _ _ => pure⟩⟩
+ 
+ /--
+ Creates a `DeclCache`.

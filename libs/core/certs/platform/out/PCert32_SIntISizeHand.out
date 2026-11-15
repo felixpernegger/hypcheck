@@ -1,0 +1,24 @@
+PCert.pos.ISize.toInt64_ne_minValue.h1 (drop) via SIntISizeHand.ISize.toInt64_ne_minValue.h1_pos
+PCert.neg.ISize.ofIntLE_int64ToInt.h1 (indep) via SIntISizeHand.ISize.ofIntLE_int64ToInt.h1_neg
+PCert.neg.ISize.ofIntLE_int64ToInt.h2 (indep) via SIntISizeHand.ISize.ofIntLE_int64ToInt.h2_neg
+PCert.neg.ISize.toInt64_ofInt.h1 (drop) via SIntISizeHand.ISize.toInt64_ofInt.h1_neg
+PCert.neg.ISize.toInt64_ofInt.h2 (drop) via SIntISizeHand.ISize.toInt64_ofInt.h2_neg
+PCert.neg.ISize.toInt64_div_of_ne_right.h2 (drop) via SIntISizeHand.ISize.toInt64_div_of_ne_right.h2_neg
+PCert.neg.ISize.toInt64_ofNat.h1 (drop) via SIntISizeHand.ISize.toInt64_ofNat.h1_neg
+PCert.neg.ISize.toInt64_neg_of_ne.h1 (drop) via SIntISizeHand.ISize.toInt64_neg_of_ne.h1_neg
+PCert.neg.ISize.toInt64_div_of_ne_left.h2 (drop) via SIntISizeHand.ISize.toInt64_div_of_ne_left.h2_neg
+PCert.neg.ISize.toInt64_ofNat'.h1 (drop) via SIntISizeHand.ISize.toInt64_ofNat'.h1_neg
+library axioms checked: 86; depending on a swap (re-proved): []
+closure: 3454 constants; swaps: #[System.Platform.getNumBits]
+OK theorem PCert.numBits_eq : System.Platform.numBits = 32
+OK theorem PCert.pos.ISize.toInt64_ne_minValue.h1 : ∀ (a : ISize), a.toInt64 ≠ Int64.minValue
+OK theorem PCert.neg.ISize.toInt64_ofNat'.h1 : ¬∀ {n : Nat}, (ISize.ofNat n).toInt64 = Int64.ofNat n
+OK theorem PCert.neg.ISize.toInt64_ofNat.h1 : ¬∀ {n : Nat}, (OfNat.ofNat n).toInt64 = OfNat.ofNat n
+OK theorem PCert.neg.ISize.toInt64_ofInt.h1 : ¬∀ {n : Int}, n ≤ ISize.maxValue.toInt → (ISize.ofInt n).toInt64 = Int64.ofInt n
+OK theorem PCert.neg.ISize.toInt64_ofInt.h2 : ¬∀ {n : Int}, ISize.minValue.toInt ≤ n → (ISize.ofInt n).toInt64 = Int64.ofInt n
+OK theorem PCert.neg.ISize.toInt64_div_of_ne_right.h2 : ¬∀ (a b : ISize), (a / b).toInt64 = a.toInt64 / b.toInt64
+OK theorem PCert.neg.ISize.ofIntLE_int64ToInt.h2 : ¬∀ (x : Int64) {h₁ : ISize.minValue.toInt ≤ x.toInt}, x.toInt ≤ ISize.maxValue.toInt
+OK theorem PCert.neg.ISize.ofIntLE_int64ToInt.h1 : ¬∀ (x : Int64) {h₂ : x.toInt ≤ ISize.maxValue.toInt}, ISize.minValue.toInt ≤ x.toInt
+OK theorem PCert.neg.ISize.toInt64_neg_of_ne.h1 : ¬∀ {x : ISize}, (-x).toInt64 = -x.toInt64
+OK theorem PCert.neg.ISize.toInt64_div_of_ne_left.h2 : ¬∀ (a b : ISize), (a / b).toInt64 = a.toInt64 / b.toInt64
+OK swap PCert.swap : System.Platform.getNumBits = fun x => ⟨32, ⋯⟩

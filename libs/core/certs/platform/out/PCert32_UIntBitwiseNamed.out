@@ -1,0 +1,12 @@
+PCert.pos.UInt32.toUSize_shiftLeft_of_lt.h2 (drop) via UIntBitwiseNamed.UInt32.toUSize_shiftLeft_of_lt.h2_pos
+PCert.neg.USize.toUInt64_shiftLeft_of_lt.h2 (drop) via UIntBitwiseNamed.USize.toUInt64_shiftLeft_of_lt.h2_neg
+PCert.neg.UInt64.toUSize_shiftLeft.h2 (drop) via UIntBitwiseNamed.UInt64.toUSize_shiftLeft.h2_neg
+PCert.pos.USize.toUInt32_shiftLeft.h2 (drop) via UIntBitwiseNamed.USize.toUInt32_shiftLeft.h2_pos
+library axioms checked: 86; depending on a swap (re-proved): []
+closure: 2219 constants; swaps: #[System.Platform.getNumBits]
+OK theorem PCert.numBits_eq : System.Platform.numBits = 32
+OK theorem PCert.pos.USize.toUInt32_shiftLeft.h2 : ∀ (a b : USize), (a <<< b).toUInt32 = a.toUInt32 <<< b.toUInt32
+OK theorem PCert.pos.UInt32.toUSize_shiftLeft_of_lt.h2 : ∀ (a b : UInt32), (a <<< b).toUSize = a.toUSize <<< b.toUSize % 4294967296
+OK theorem PCert.neg.UInt64.toUSize_shiftLeft.h2 : ¬∀ (a b : UInt64), (a <<< b).toUSize = a.toUSize <<< b.toUSize
+OK theorem PCert.neg.USize.toUInt64_shiftLeft_of_lt.h2 : ¬∀ (a b : USize), (a <<< b).toUInt64 = a.toUInt64 <<< b.toUInt64 % UInt64.ofNat USize.size
+OK swap PCert.swap : System.Platform.getNumBits = fun x => ⟨32, ⋯⟩

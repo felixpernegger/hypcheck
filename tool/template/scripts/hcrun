@@ -1,0 +1,12 @@
+#!/bin/bash
+# Run a native tool from tools/ (build: scripts/build_tools.sh) with the library's LEAN_PATH (see hclean).
+# Usage: scripts/hcrun hypcheck ARGS...   (hypcheck, propparams, unused, unusedtrans, unusedemit,
+#        instderivable, nectrans, twins)
+D=$(cd "$(dirname "$0")" && pwd)
+[[ -s "$D/.leanpath" ]] || "$D/hclean" --refresh > /dev/null || exit 1
+exe=$1; shift
+# Lean prints a panic with a long backtrace when `exact?` cannot place its "Try this" suggestion (there is no
+# source file here); the panic is harmless, so keep it to one line unless LEAN_BACKTRACE is set.
+export LEAN_BACKTRACE=${LEAN_BACKTRACE:-0}
+# HC_EXTRA_PATH (colon-separated) is appended, e.g. runs/reuse/mods for scripts/hand_modules.py imports.
+LEAN_PATH=$(cat "$D/.leanpath")${HC_EXTRA_PATH:+:$HC_EXTRA_PATH} exec "$D/../tools/.lake/build/bin/$exe" "$@"

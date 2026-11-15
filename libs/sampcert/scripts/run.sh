@@ -1,0 +1,1 @@
+../../../kit/scripts/run.sh

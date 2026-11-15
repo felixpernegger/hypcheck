@@ -1,0 +1,3 @@
+# LF everywhere: the shell scripts (some without extension, e.g. tool/template/scripts/capped) break with CRLF,
+# which Git for Windows would otherwise check out.
+* text=auto eol=lf

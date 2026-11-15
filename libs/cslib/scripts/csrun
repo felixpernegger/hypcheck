@@ -1,0 +1,7 @@
+#!/bin/bash
+# Run a native tool from tools/ (built by `cd tools && lake build`) with CSLib's LEAN_PATH (see cslean).
+# Usage: scripts/csrun hypcheck ARGS...   (names: hypcheck, propparams, ...)
+D=$(cd "$(dirname "$0")" && pwd)
+[[ -s "$D/.leanpath" ]] || "$D/cslean" --refresh > /dev/null || exit 1
+exe=$1; shift
+LEAN_PATH=$(cat "$D/.leanpath") exec "$D/../tools/.lake/build/bin/$exe" "$@"

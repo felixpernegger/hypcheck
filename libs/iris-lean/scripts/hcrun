@@ -1,0 +1,8 @@
+#!/bin/bash
+# Run a native tool from tools/ (build: scripts/build_tools.sh) with the library's LEAN_PATH (see hclean).
+# Usage: scripts/hcrun hypcheck ARGS...   (hypcheck, propparams, unused, unusedtrans, unusedemit,
+#        instderivable, nectrans, twins)
+D=$(cd "$(dirname "$0")" && pwd)
+[[ -s "$D/.leanpath" ]] || "$D/hclean" --refresh > /dev/null || exit 1
+exe=$1; shift
+LEAN_PATH=$(cat "$D/.leanpath") exec "$D/../tools/.lake/build/bin/$exe" "$@"

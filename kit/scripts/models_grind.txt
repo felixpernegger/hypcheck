@@ -1,0 +1,165 @@
+-- Values for the reflection types of `grind`, `cutsat`/`omega` (`Int.Internal.Linear`), `linarith`
+-- and `ac` (v7). Used together with `models.txt` (concatenate both for `--models`). Most of these
+-- theorems say "certificate check passed ⇒ semantic fact"; small expressions over a one- or
+-- two-variable context refute them once a hypothesis is dropped.
+-- carriers for type variables (after `Nat`, `Bool`): a commutative ring of characteristic 0, one of
+-- characteristic 256 that is not an ordered ring and has zero divisors, and a field
+Type := Int
+Type := UInt8
+Type := Rat
+-- contexts (`RArray`; `CommRing.Context`, `Linarith.Context`, `Int.Internal.Linear.Context` unfold to it)
+Lean.RArray Int := .leaf 1
+Lean.RArray Int := .leaf 0
+Lean.RArray Int := .branch 1 (.leaf 1) (.leaf 2)
+Lean.RArray Int := .leaf (-1)
+Lean.RArray Int := .leaf 2
+Lean.RArray UInt8 := .leaf 1
+Lean.RArray UInt8 := .leaf 0
+Lean.RArray UInt8 := .branch 1 (.leaf 2) (.leaf 128)
+Lean.RArray UInt8 := .leaf 255
+Lean.RArray Rat := .leaf 1
+Lean.RArray Rat := .leaf 0
+Lean.RArray Rat := .branch 1 (.leaf (1/2)) (.leaf 2)
+Lean.RArray Rat := .leaf (-1)
+Lean.RArray (PLift Nat) := .leaf ⟨1⟩
+Lean.RArray (PLift Nat) := .branch 1 (.leaf ⟨1⟩) (.leaf ⟨2⟩)
+Lean.RArray (PLift Nat) := .leaf ⟨0⟩
+Lean.RArray (PLift Bool) := .leaf ⟨true⟩
+Lean.RArray (PLift Bool) := .branch 1 (.leaf ⟨true⟩) (.leaf ⟨false⟩)
+-- `Int.Internal.Linear`
+Int.Internal.Linear.Expr := .num 0
+Int.Internal.Linear.Expr := .var 0
+Int.Internal.Linear.Expr := .num 1
+Int.Internal.Linear.Expr := .var 1
+Int.Internal.Linear.Expr := .add (.var 0) (.var 1)
+Int.Internal.Linear.Expr := .neg (.var 0)
+Int.Internal.Linear.Expr := .mulL 2 (.var 0)
+Int.Internal.Linear.Expr := .sub (.var 0) (.var 1)
+Int.Internal.Linear.Expr := .num 2
+Int.Internal.Linear.Expr := .mulR (.var 0) 2
+Int.Internal.Linear.Poly := .num 0
+Int.Internal.Linear.Poly := .add 1 0 (.num 0)
+Int.Internal.Linear.Poly := .num 1
+Int.Internal.Linear.Poly := .num (-1)
+Int.Internal.Linear.Poly := .add 1 1 (.num 0)
+Int.Internal.Linear.Poly := .add 2 0 (.num 1)
+Int.Internal.Linear.Poly := .add 1 0 (.add (-1) 1 (.num 0))
+Int.Internal.Linear.Poly := .add (-1) 0 (.num 0)
+Int.Internal.Linear.Poly := .num 2
+Int.Internal.Linear.Poly := .add 2 0 (.num 0)
+-- `Lean.Grind.CommRing`
+Lean.Grind.CommRing.Expr := .num 0
+Lean.Grind.CommRing.Expr := .var 0
+Lean.Grind.CommRing.Expr := .num 1
+Lean.Grind.CommRing.Expr := .var 1
+Lean.Grind.CommRing.Expr := .add (.var 0) (.var 1)
+Lean.Grind.CommRing.Expr := .mul (.var 0) (.var 0)
+Lean.Grind.CommRing.Expr := .neg (.var 0)
+Lean.Grind.CommRing.Expr := .num 2
+Lean.Grind.CommRing.Expr := .sub (.var 0) (.var 1)
+Lean.Grind.CommRing.Expr := .pow (.var 0) 2
+Lean.Grind.CommRing.Expr := .natCast 1
+Lean.Grind.CommRing.Expr := .intCast (-1)
+Lean.Grind.CommRing.Expr := .mul (.var 0) (.var 1)
+Lean.Grind.CommRing.Expr := .add (.var 0) (.num 1)
+Lean.Grind.CommRing.Mon := .unit
+Lean.Grind.CommRing.Mon := .mult ⟨0, 1⟩ .unit
+Lean.Grind.CommRing.Mon := .mult ⟨1, 1⟩ .unit
+Lean.Grind.CommRing.Mon := .mult ⟨0, 2⟩ .unit
+Lean.Grind.CommRing.Mon := .mult ⟨0, 1⟩ (.mult ⟨1, 1⟩ .unit)
+Lean.Grind.CommRing.Poly := .num 0
+Lean.Grind.CommRing.Poly := .add 1 (.mult ⟨0, 1⟩ .unit) (.num 0)
+Lean.Grind.CommRing.Poly := .num 1
+Lean.Grind.CommRing.Poly := .add 1 (.mult ⟨1, 1⟩ .unit) (.num 0)
+Lean.Grind.CommRing.Poly := .num (-1)
+Lean.Grind.CommRing.Poly := .add 1 (.mult ⟨0, 1⟩ .unit) (.num 1)
+Lean.Grind.CommRing.Poly := .add 2 (.mult ⟨0, 1⟩ .unit) (.num 0)
+Lean.Grind.CommRing.Poly := .add 1 (.mult ⟨0, 2⟩ .unit) (.num 0)
+Lean.Grind.CommRing.Poly := .num 2
+Lean.Grind.CommRing.Poly := .add (-1) (.mult ⟨0, 1⟩ .unit) (.num 0)
+Lean.Grind.CommRing.Poly := .add 1 (.mult ⟨0, 1⟩ (.mult ⟨1, 1⟩ .unit)) (.num 0)
+Lean.Grind.CommRing.PPoly := .num 0
+Lean.Grind.CommRing.PPoly := .num 1
+Lean.Grind.CommRing.PPoly := .add 1 1 0 (.num 0)
+Lean.Grind.CommRing.PPoly := .num (-1)
+Lean.Grind.CommRing.PPoly := .add 1 1 0 (.num 1)
+Lean.Grind.CommRing.PPoly := .add 2 1 1 (.num 0)
+Lean.Grind.CommRing.PSumTree := .leaf 1 .unit 0 (.num 1)
+Lean.Grind.CommRing.PSumTree := .leaf 1 (.mult ⟨0, 1⟩ .unit) 0 (.num 1)
+Lean.Grind.CommRing.PSumTree := .leaf 2 .unit 0 (.num 0)
+Lean.Grind.CommRing.PSumTree := .node (.leaf 1 .unit 0 (.num 1)) (.leaf (-1) .unit 0 (.num 1))
+Lean.Grind.CommRing.MList := .nil
+Lean.Grind.CommRing.MList := .cons (.num 1) (.num 0) .nil
+Lean.Grind.CommRing.MList := .cons (.add 1 (.mult ⟨0, 1⟩ .unit) (.num 0)) (.num 1) .nil
+Lean.Grind.CommRing.KList := .nil
+Lean.Grind.CommRing.KList := .cons 1 .unit (.num 1) .nil
+Lean.Grind.CommRing.KList := .cons 1 (.mult ⟨0, 1⟩ .unit) (.num 0) .nil
+-- `InvVars`/`InvAtoms` (lists of variable pairs)
+List (Nat × Nat) := []
+List (Nat × Nat) := [(0, 2)]
+List (Nat × Nat) := [(0, 1)]
+List (Nat × Nat) := [(1, 0)]
+-- `Lean.Grind.Linarith`
+Lean.Grind.Linarith.Expr := .zero
+Lean.Grind.Linarith.Expr := .var 0
+Lean.Grind.Linarith.Expr := .var 1
+Lean.Grind.Linarith.Expr := .add (.var 0) (.var 1)
+Lean.Grind.Linarith.Expr := .neg (.var 0)
+Lean.Grind.Linarith.Expr := .intMul 2 (.var 0)
+Lean.Grind.Linarith.Expr := .sub (.var 0) (.var 1)
+Lean.Grind.Linarith.Expr := .natMul 2 (.var 0)
+Lean.Grind.Linarith.Poly := .nil
+Lean.Grind.Linarith.Poly := .add 1 0 .nil
+Lean.Grind.Linarith.Poly := .add (-1) 0 .nil
+Lean.Grind.Linarith.Poly := .add 1 0 (.add 1 1 .nil)
+Lean.Grind.Linarith.Poly := .add 2 0 .nil
+Lean.Grind.Linarith.Poly := .add 1 1 .nil
+Lean.Grind.Linarith.Poly := .add 1 0 (.add (-1) 1 .nil)
+-- `Lean.Grind.AC`
+Lean.Grind.AC.Seq := .var 0
+Lean.Grind.AC.Seq := .var 1
+Lean.Grind.AC.Seq := .cons 0 (.var 0)
+Lean.Grind.AC.Seq := .cons 0 (.var 1)
+Lean.Grind.AC.Seq := .cons 1 (.var 0)
+Lean.Grind.AC.Seq := .cons 0 (.cons 1 (.var 0))
+Lean.Grind.AC.Expr := .var 0
+Lean.Grind.AC.Expr := .var 1
+Lean.Grind.AC.Expr := .op (.var 0) (.var 1)
+Lean.Grind.AC.Expr := .op (.var 0) (.var 0)
+Lean.Grind.AC.Expr := .op (.var 1) (.var 0)
+Lean.Grind.AC.Expr := .op (.op (.var 0) (.var 1)) (.var 0)
+-- lawful operations for `AC.Context.op` (the theorems assume `Associative`, `Commutative`,
+-- `LawfulIdentity` with the first variable as identity, ...)
+Nat → Nat → Nat := fun a b => a + b
+Nat → Nat → Nat := fun a b => max a b
+Bool → Bool → Bool := fun a b => a && b
+Bool → Bool → Bool := fun a b => a || b
+-- v9: a field of characteristic 2 (for dropped `IsCharP α 0`), and unlawful orders on the ring
+-- carriers (for dropped `IsPreorder`/`IsPartialOrder`/`IsLinearOrder`/`LawfulOrderLT`)
+Type := Fin 2
+Lean.Grind.Field (Fin 2) := { (inferInstance : Lean.Grind.CommRing (Fin 2)) with inv := id, div := (· * ·), zpow := ⟨fun a n => a ^ n.natAbs⟩, div_eq_mul_inv := (by decide), zero_ne_one := (by decide), inv_zero := (by decide), mul_inv_cancel := (by decide), zpow_zero := fun a => Lean.Grind.Semiring.pow_zero a, zpow_succ := fun a n => Lean.Grind.Semiring.pow_succ a n, zpow_neg := (by intro a n; show a ^ (-n).natAbs = a ^ n.natAbs; rw [Int.natAbs_neg]) }
+LE Int := ⟨fun _ _ => False⟩
+LE Int := ⟨fun a b => a < b⟩                -- irreflexive
+LE Int := ⟨fun _ _ => True⟩
+LE Int := ⟨fun a b => b ≤ a⟩                -- reversed
+LT Int := ⟨fun a b => a ≤ b⟩                -- not `a ≤ b ∧ ¬b ≤ a`
+LT Int := ⟨fun _ _ => False⟩
+LT Int := ⟨fun a b => a ≠ b⟩
+LT Int := ⟨fun a b => b < a⟩                -- reversed
+LE Rat := ⟨fun _ _ => False⟩
+LE Rat := ⟨fun a b => a < b⟩
+LE Rat := ⟨fun _ _ => True⟩
+LT Rat := ⟨fun a b => a ≤ b⟩
+LT Rat := ⟨fun _ _ => False⟩
+-- v9.1 (runs/explore5/RingPatterns.md): packed codes 2 and 3 (x₀² in base ≥ 3, x₁ resp. x₀x₁ in base 2:
+-- digit overflow), a negative packed coefficient, distinct variable values `i ↦ i + 2`, and an
+-- inverse table with numeral 0 (`x₀ = 0⁻¹ = 0` satisfies `InvVars.ok` but not `nonzero_k`)
+Lean.Grind.CommRing.PPoly := .add 1 1 1 (.num 0)
+Lean.Grind.CommRing.PPoly := .add 1 2 2 (.num 0)
+Lean.Grind.CommRing.PPoly := .add 1 2 3 (.num 0)
+Lean.Grind.CommRing.PPoly := .add (-1) 1 1 (.num 0)
+Lean.Grind.CommRing.PPoly := .add 1 1 1 (.num (-1))
+Nat → Int := fun i => (i : Int) + 2
+Nat → Rat := fun i => (i : Rat) + 2
+Nat → Nat := fun i => i + 2
+List (Nat × Nat) := [(0, 0)]

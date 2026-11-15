@@ -1,0 +1,1 @@
+../../../kit/tests/selftest.sh

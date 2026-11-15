@@ -1,0 +1,7 @@
+#!/bin/bash
+# hx NAME ARGS: run the native build of scripts/NAME.lean (tools/) on the pinned toolchain + Batteries build.
+# Callers add the memory cap (peak.sh / systemd-run). `hx hypcheck` = scripts/hc.
+D=$(dirname "$(readlink -f "$0")"); REPO=${BATTERIES_DIR:?set BATTERIES_DIR to a Batteries checkout built at commit 4af7237}; n=$1; shift
+export LEAN_SYSROOT="$HOME/.elan/toolchains/leanprover--lean4---v4.36.0-rc2"
+export LEAN_PATH="$REPO/.lake/build/lib/lean${LEAN_PATH:+:$LEAN_PATH}"
+exec "$D/../tools/.lake/build/bin/$n" "$@"

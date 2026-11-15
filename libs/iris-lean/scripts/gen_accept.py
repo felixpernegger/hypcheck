@@ -1,0 +1,1 @@
+../../../kit/scripts/gen_accept.py

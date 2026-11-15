@@ -1,0 +1,93 @@
+# Native build of hypcheck/scripts/HypCheck.lean (batteries port): a worker then holds one environment
+# instead of two (`lean --run` keeps the script's own elaboration environment). Same toolchain as Batteries.
+name = "hctool"
+
+[[lean_exe]]
+name = "hypcheck"
+root = "HypCheck"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "Unused"
+root = "Unused"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "UnusedTrans"
+root = "UnusedTrans"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "UnusedEmit"
+root = "UnusedEmit"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "InstDerivable"
+root = "InstDerivable"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "NecTrans"
+root = "NecTrans"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "Twins"
+root = "Twins"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "PropParams"
+root = "PropParams"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "UnusedPriv"
+root = "UnusedPriv"
+srcDir = "../scripts/priv"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "UnusedTransPriv"
+root = "UnusedTransPriv"
+srcDir = "../scripts/priv"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "InstDerivablePriv"
+root = "InstDerivablePriv"
+srcDir = "../scripts/priv"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "NecTransPriv"
+root = "NecTransPriv"
+srcDir = "../scripts/priv"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "TwinsPriv"
+root = "TwinsPriv"
+srcDir = "../scripts/priv"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "Scope"
+root = "Scope"
+srcDir = "../scripts"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "Scope2"
+root = "Scope2"
+srcDir = "../scripts"
+supportInterpreter = true

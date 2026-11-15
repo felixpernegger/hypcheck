@@ -1,0 +1,177 @@
+#!/bin/bash
+# hypcheck: decide mechanically, for every Prop hypothesis of every theorem of a Lean library, whether it is removable
+# or necessary, with a kernel-checked Lean proof for every verdict. No AI agents. See tool/README.md.
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: tool/hypcheck LIBDIR ROOT [options]
+
+  LIBDIR  the library's Lake project directory, already built
+          (`lake build`; for Mathlib-based projects `lake exe cache get` first)
+  ROOT    its root module, e.g. Batteries (several: comma-separated)
+
+Options:
+  --modules A,B      check only theorems in these module prefixes (default: ROOT)
+  --workspace DIR    where the results go (default: workspaces/<name> in this repository)
+  --name NAME        workspace name (default: the LIBDIR directory name)
+  --level L          fast | search (default) | thorough: how hard to look for removal proofs
+  --removable-only   skip the counterexample search: only look for removable hypotheses (much faster)
+  --private          also check private theorems
+  --inventory-only   set up, self-test and count the hypotheses, then stop (rerun without it to continue)
+  --workers N        parallel worker processes (default: from CPU count and free memory)
+  -h, --help         this text
+
+Run the same command again to resume after an interruption: finished steps are skipped. Results:
+<workspace>/report.md (readable) and <workspace>/results/*.jsonl (one line per hypothesis).
+EOF
+}
+
+KIT=$(cd "$(dirname "$0")" && pwd)
+[[ $# -ge 1 && ( $1 == -h || $1 == --help ) ]] && { usage; exit 0; }
+[[ $# -ge 2 ]] || { usage >&2; exit 2; }
+LIBDIR=$1; ROOT=$2; shift 2
+MODULES=$ROOT; WS=; NAME=; LEVEL=search; GOAL=both; PRIV=0; WORKERS=; INVONLY=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --modules) MODULES=$2; shift 2 ;;
+    --workspace) WS=$2; shift 2 ;;
+    --name) NAME=$2; shift 2 ;;
+    --level) LEVEL=$2; shift 2 ;;
+    --removable-only) GOAL=removable; shift ;;
+    --private) PRIV=1; shift ;;
+    --inventory-only) INVONLY=1; shift ;;
+    --workers) WORKERS=$2; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "hypcheck: unknown option $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+case "$LEVEL" in fast|search|thorough) ;; *) echo "hypcheck: --level must be fast, search or thorough" >&2; exit 2 ;; esac
+for c in python3 lake; do
+  command -v $c > /dev/null || { echo "hypcheck: '$c' not found (needed: bash, Python 3, elan/lake)" >&2; exit 1; }
+done
+[[ -d "$LIBDIR" ]] || { echo "hypcheck: $LIBDIR is not a directory" >&2; exit 1; }
+LIBDIR=$(cd "$LIBDIR" && pwd)
+NAME=${NAME:-$(basename "$LIBDIR" | tr 'A-Z' 'a-z')}
+WS=${WS:-$(cd "$KIT/.." && pwd)/workspaces/$NAME}
+
+T0=$(date +%s)
+say() { echo "hypcheck [$(date +%H:%M:%S)] $*"; }
+# step NAME CMD...: run once; a marker in runs/mech/ records success, so a rerun skips it
+step() {
+  local n=$1; shift
+  if [[ -f "runs/mech/$n.done" ]]; then say "$n: done before, skipped"; return 0; fi
+  say "$n ..."; local s=$(date +%s)
+  "$@"
+  mkdir -p runs/mech; date > "runs/mech/$n.done"
+  say "$n: finished in $(( $(date +%s) - s )) s"
+}
+
+# 1. workspace
+if [[ -e "$WS" ]]; then
+  [[ -f "$WS/hc.env" ]] || { echo "hypcheck: $WS exists but is no workspace (no hc.env)" >&2; exit 1; }
+  # shellcheck disable=SC1091
+  have=$(source "$WS/hc.env"; echo "$HC_LIBDIR|$HC_MODULES")
+  if [[ "$have" != "$LIBDIR|$MODULES" ]]; then
+    echo "hypcheck: $WS was made for '${have%%|*}' (modules ${have#*|}), not '$LIBDIR' (modules $MODULES)." >&2
+    echo "          Use --workspace or --name for a separate workspace." >&2; exit 1
+  fi
+  say "resuming in $WS"
+  if [[ ! -x "$WS/tools/.lake/build/bin/hypcheck" ]]; then
+    say "native tools missing: building them"; (cd "$WS" && scripts/build_tools.sh)
+  fi
+else
+  say "creating the workspace $WS (builds the native tools with the library's toolchain: ~1-2 min, ~3 GB disk)"
+  log=$(mktemp)
+  if ! "$KIT/new_target.sh" "$NAME" "$LIBDIR" "$ROOT" "$MODULES" "$WS" > "$log" 2>&1 \
+     || [[ ! -x "$WS/tools/.lake/build/bin/hypcheck" ]]; then
+    tail -30 "$log" >&2; echo "hypcheck: creating the workspace failed (full log: $log)" >&2; exit 1
+  fi
+  mkdir -p "$WS/runs/mech"; mv "$log" "$WS/runs/mech/setup.log"
+fi
+cd "$WS"
+HC_CAP=$(scripts/capped --backend) || exit 1; export HC_CAP
+
+if [[ -z "$WORKERS" ]]; then
+  cpus=$(python3 -c 'import os; print(os.cpu_count() or 2)')
+  avail=$(scripts/capped --meminfo 2> /dev/null | cut -d' ' -f2); avail=${avail:-4000}
+  WORKERS=$(( cpus - 1 < avail / 1500 ? cpus - 1 : avail / 1500 ))
+  max=6; [[ $HC_CAP == systemd ]] || max=3
+  if (( WORKERS > max )); then WORKERS=$max; fi
+  if (( WORKERS < 1 )); then WORKERS=1; fi
+fi
+say "library $LIBDIR, modules $MODULES; level $LEVEL, goal $GOAL; $WORKERS workers; memory cap: $HC_CAP"
+
+# 2. self-test of the checking pipeline
+selftest() { tests/selftest.sh > runs/mech/selftest.log 2>&1 || true
+  tail -1 runs/mech/selftest.log | grep -q 'SELFTEST OK' || { echo "hypcheck: self-test failed, see $WS/runs/mech/selftest.log" >&2; exit 1; }; }
+mkdir -p runs/mech
+step selftest selftest
+
+# 3. inventory: every Prop hypothesis of every theorem in scope
+step inventory bash -c 'scripts/inventory.sh > runs/mech/inventory.log 2>&1 || { tail runs/mech/inventory.log; exit 1; }
+  echo "  in scope: $(wc -l < runs/inventory/rows_public.jsonl) hypotheses of public theorems, $(wc -l < runs/inventory/rows_private.jsonl) of private ones"'
+if (( INVONLY )); then
+  say "in scope: $(wc -l < runs/inventory/rows_public.jsonl) hypotheses of public theorems, $(wc -l < runs/inventory/rows_private.jsonl) of private ones"
+  say "stopped after the inventory (--inventory-only); run the same command without it to continue"
+  exit 0
+fi
+
+# 4. structural checks: hypotheses the library's proof never uses, instances derivable from the others
+step structural bash -c 'scripts/struct.sh > runs/mech/struct.log 2>&1 && scripts/struct_proofs.sh >> runs/mech/struct.log 2>&1 || { tail runs/mech/struct.log; exit 1; }'
+
+# 5. HypCheck: removal tactics and proof repair for removable, small values and models for counterexamples
+KEY=$LEVEL-$GOAL
+cat scripts/models.txt > runs/mech/models.txt
+if [[ -f "scripts/models_$NAME.txt" ]]; then cat "scripts/models_$NAME.txt" >> runs/mech/models.txt; fi
+ARGS=(); for m in ${ROOT//,/ }; do ARGS+=(--import "$m"); done
+for m in ${MODULES//,/ }; do ARGS+=(--module "$m"); done
+ARGS+=(--level "$LEVEL" --goal "$GOAL" --models runs/mech/models.txt)
+open_rows() {  # BASE: are there unresolved rows? (the results files start out as the inventory, all unresolved)
+  [[ -f "results/$1.jsonl" ]] || python3 -c 'import sys; sys.path.insert(0, "scripts"); import results_io as io
+rows = io.load(sys.argv[1])
+if rows: io.write_splits(rows, sys.argv[1])' "$1"
+  [[ -s "results/$1_unresolved.jsonl" ]]
+}
+run_tool() {  # BASE
+  local out=runs/mech/$KEY/$1.jsonl extra=(); mkdir -p "runs/mech/$KEY"
+  local nc=
+  # private proofs only compile under their own module name (scripts/priv/compile_priv.py in the merge step)
+  if [[ $1 == private ]]; then extra=(--only-private); nc=1; fi
+  if ! open_rows "$1"; then say "no open $1 rows"; return 0; fi
+  say "$(wc -l < "results/$1_unresolved.jsonl") open $1 hypotheses; progress every minute"
+  HC_UNIT=hc-$NAME-$1 PROGRESS=60 NO_COMPILE=$nc scripts/run.sh "$WORKERS" "$out" "${ARGS[@]}" "${extra[@]}" \
+    --redo "results/$1_unresolved.jsonl" 2>&1 | grep --line-buffered -v '^OK ' | tee "runs/mech/$KEY/$1.run.log"
+}
+merge_tool() {  # BASE
+  local out=runs/mech/$KEY/$1.jsonl
+  [[ -s "$out" ]] || { say "nothing to merge"; return 0; }
+  if [[ $1 == private ]]; then
+    python3 scripts/priv/compile_priv.py "${out%.jsonl}.proofs"
+    python3 scripts/merge_tool.py "$out" "mech-$KEY" --private
+  else
+    python3 scripts/merge_tool.py "$out" "mech-$KEY"
+  fi
+}
+repair() {  # proof repair finds carry no stored proof yet: store, check and merge them
+  local out=runs/mech/$KEY/public.jsonl k=1
+  [[ -s "$out" ]] || return 0
+  while [[ -e "checks/Repair${k}Hand.lean" || -e "runs/repair/Repair${k}_verdicts.jsonl" ]]; do k=$((k + 1)); done
+  python3 scripts/repair_proofs.py "$k" "$out" 2>&1 | tail -4
+}
+step "tool-public-$KEY" run_tool public
+step "merge-public-$KEY" merge_tool public
+if [[ $LEVEL != fast ]]; then step "repair-public-$KEY" repair; fi
+if (( PRIV )); then
+  step "tool-private-$KEY" run_tool private
+  step "merge-private-$KEY" merge_tool private
+fi
+
+# 6. flow: verdicts that follow from other verdicts (every time, it is cheap and depends on all merges so far)
+say "flow ..."
+scripts/flow.sh > runs/mech/flow.log 2>&1 || { tail runs/mech/flow.log; exit 1; }
+
+# 7. report
+say "done in $(( ($(date +%s) - T0) / 60 )) min"
+echo
+python3 scripts/report.py report.md

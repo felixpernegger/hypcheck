@@ -1,0 +1,26 @@
+-- batteries port (2026-11-10): values and broken instances for the Batteries pilot failures.
+-- Concatenate with models.txt for --models (runs/pilot/models_used*.txt).
+-- union-find states (structure with a Prop field: no generic values)
+Batteries.UnionFind := Batteries.UnionFind.empty
+Batteries.UnionFind := Batteries.UnionFind.empty.push
+Batteries.UnionFind := Batteries.UnionFind.empty.push.push
+Batteries.UnionFind := Batteries.UnionFind.empty.push.push.push
+Batteries.UnionFind := Batteries.UnionFind.empty.push.push.union! 0 1
+-- EStateM computations
+EStateM Nat Nat Nat := fun s => .ok s s
+EStateM Nat Nat Nat := fun s => .ok 0 s
+EStateM Nat Nat Nat := fun s => .ok 0 (s + 1)
+EStateM Nat Nat Nat := fun s => .error 0 s
+-- comparisons that are oriented but not transitive (cyclic mod 3)
+Nat → Nat → Ordering := fun a b => if a % 3 = b % 3 then .eq else if (a + 1) % 3 = b % 3 then .lt else .gt
+Ord Nat := ⟨fun a b => if a % 3 = b % 3 then .eq else if (a + 1) % 3 = b % 3 then .lt else .gt⟩
+-- algebra: associative but 0/1 not an identity; identity but not associative
+Zero Nat := ⟨1⟩
+One Nat := ⟨0⟩
+Add Nat := ⟨fun a b => a + b + 1⟩
+Add Nat := ⟨fun a b => if a = 0 then b else if b = 0 then a else 2 * a + b⟩
+Mul Nat := ⟨fun a b => if a = 1 then b else if b = 1 then a else 2 * a + b⟩
+-- state monad with an unlawful MonadStateOf (get always 0 / set ignored)
+Type → Type := StateT Nat Id
+MonadStateOf Nat (StateT Nat Id) := { get := (pure 0 : StateT Nat Id Nat), set := fun s => (StateT.set s : StateT Nat Id PUnit), modifyGet := fun f => (StateT.modifyGet f : StateT Nat Id _) }
+MonadStateOf Nat (StateT Nat Id) := { get := (StateT.get : StateT Nat Id Nat), set := fun _ => (pure ⟨⟩ : StateT Nat Id PUnit), modifyGet := fun f => (StateT.modifyGet f : StateT Nat Id _) }

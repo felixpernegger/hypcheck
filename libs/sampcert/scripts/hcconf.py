@@ -1,0 +1,1 @@
+../../../kit/scripts/hcconf.py

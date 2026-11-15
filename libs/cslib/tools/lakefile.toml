@@ -1,0 +1,45 @@
+# Native executables of the hypcheck tools (same toolchain as CSLib). Running them via `lean --run`
+# costs ~1.6 GB anonymous memory per process (core oleans re-read into the heap); native: see Methods.md "Port".
+name = "hctools"
+srcDir = "../scripts"
+defaultTargets = ["hypcheck", "propparams", "unused", "unusedtrans", "unusedemit", "instderivable", "nectrans", "twins"]
+
+[[lean_exe]]
+name = "hypcheck"
+root = "HypCheck"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "propparams"
+root = "PropParams"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "unused"
+root = "Unused"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "unusedtrans"
+root = "UnusedTrans"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "unusedemit"
+root = "UnusedEmit"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "instderivable"
+root = "InstDerivable"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "nectrans"
+root = "NecTrans"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "twins"
+root = "Twins"
+supportInterpreter = true

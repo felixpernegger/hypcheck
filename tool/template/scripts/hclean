@@ -1,0 +1,14 @@
+#!/bin/bash
+# The analysed library's `lean` with the search path of `lake env` in $HC_LIBDIR (library + dependency oleans),
+# usable from any directory. Cached in scripts/.leanpath / .leanbin; refresh with `hclean --refresh` after
+# `lake update` or a toolchain bump in the library. HC_EXTRA_PATH (colon-separated) is appended to LEAN_PATH
+# (scripts/rem_trans.py compiles reused proof files as modules into runs/remtrans/mods).
+D=$(cd "$(dirname "$0")" && pwd)
+source "$D/../hc.env"
+if [[ "$1" == --refresh || ! -s "$D/.leanpath" ]]; then
+  (cd "$HC_LIBDIR" && lake env printenv LEAN_PATH) > "$D/.leanpath" || exit 1
+  (cd "$HC_LIBDIR" && lake env which lean) > "$D/.leanbin" || exit 1
+  [[ "$1" == --refresh ]] && { cat "$D/.leanpath" "$D/.leanbin"; exit 0; }
+fi
+# tools/hcrepair holds HCRepair.olean (proof repair, imported by checks/Repair*Hand.lean; built by build_tools.sh)
+LEAN_PATH=$(cat "$D/.leanpath"):$D/../tools/hcrepair${HC_EXTRA_PATH:+:$HC_EXTRA_PATH} exec "$(cat "$D/.leanbin")" "$@"

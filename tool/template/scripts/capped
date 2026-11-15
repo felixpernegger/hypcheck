@@ -1,0 +1,117 @@
+#!/bin/bash
+# Run a command under a memory cap, optionally after taking a lock and with a time limit. Every Lean process the
+# scripts start goes through here, so this is the only file that knows about the platform.
+#
+# Usage: scripts/capped [options] [--] CMD ARGS...
+#   --mem SIZE       memory cap for CMD and all its children, systemd syntax (3G, 2500M); default 3G; `none`: no cap
+#   --slice NAME     systemd slice to run in (scripts pass $HC_SLICE), so a cap set on the slice covers all its commands
+#   --unit NAME      name of the scope; stop it with `systemctl --user stop NAME.scope`. Without systemd, CMD instead
+#                    leads its own process group (unless it already does), so `kill -- -PID` stops it with all children
+#   --oom-continue   when the cap is hit, kill only the process that hit it, not every process in the scope
+#   --timeout SECS   kill CMD after SECS seconds (exit status 124)
+#   --lock FILE      first wait for an exclusive lock on FILE (so only one such command runs at a time)
+# Queries (print and exit): --backend (systemd or none), --meminfo ("TOTAL_MB AVAILABLE_MB", exit 1 if unknown).
+#
+# Backend, chosen by HC_CAP = auto (default) | systemd | none:
+#   systemd  `systemd-run --user --scope` with MemoryMax=SIZE and MemorySwapMax=0: the kernel enforces the cap, and a
+#            command that exceeds it is killed instead of freezing the machine. Needs Linux with a systemd user
+#            session (standard desktop Linux; WSL2 with systemd enabled).
+#   none     no memory cap (macOS, most containers, WSL2 without systemd). A per-process limit (`ulimit -v`) is no
+#            substitute: Lean reserves far more address space than it uses and fails to start even at 8 GB.
+#            auto prints a warning once when it falls back to none; setting HC_CAP=none yourself silences it.
+# Locks use flock(1) where it exists (Linux) and Python's fcntl.flock otherwise; time limits use timeout(1), gtimeout
+# (macOS with Homebrew coreutils) or a Python fallback. Written for bash 3.2 (the macOS /bin/bash).
+
+meminfo() {  # TOTAL_MB AVAILABLE_MB
+  if [[ -r /proc/meminfo ]]; then
+    awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {if (t && a) print int(t/1024), int(a/1024); else exit 1}' /proc/meminfo
+  elif command -v vm_stat > /dev/null && command -v sysctl > /dev/null; then
+    # macOS: available = free + inactive + speculative pages (what can be handed out without swapping)
+    local total; total=$(sysctl -n hw.memsize 2> /dev/null) || return 1
+    vm_stat | awk -v total="$total" '
+      /page size of/ {ps = $8}
+      /^Pages free:/ {gsub(/\./, "", $3); f = $3}
+      /^Pages inactive:/ {gsub(/\./, "", $3); i = $3}
+      /^Pages speculative:/ {gsub(/\./, "", $3); s = $3}
+      END {if (!ps) exit 1; print int(total/1048576), int((f + i + s) * ps / 1048576)}'
+  else
+    return 1
+  fi
+}
+
+backend() {
+  case "${HC_CAP:-auto}" in
+    systemd|none) echo "$HC_CAP" ;;
+    auto)
+      if command -v systemd-run > /dev/null && systemd-run --user --scope --quiet true > /dev/null 2>&1; then
+        echo systemd
+      else
+        echo "capped: no systemd user session here, so Lean runs WITHOUT a memory cap. Keep the number of parallel" \
+             "workers low and measure one first (scripts/measure.sh); see 'Platforms' in the tool README." \
+             "Set HC_CAP=none to silence this." >&2
+        echo none
+      fi ;;
+    *) echo "capped: HC_CAP must be auto, systemd or none (is '$HC_CAP')" >&2; return 1 ;;
+  esac
+}
+
+mem=3G; slice=; unit=; oom=; tmo=; lock=
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --mem) mem=$2; shift 2 ;;
+    --slice) slice=$2; shift 2 ;;
+    --unit) unit=$2; shift 2 ;;
+    --oom-continue) oom=1; shift ;;
+    --timeout) tmo=$2; shift 2 ;;
+    --lock) lock=$2; shift 2 ;;
+    --backend) backend; exit $? ;;
+    --meminfo) meminfo; exit $? ;;
+    --) shift; break ;;
+    -*) echo "capped: unknown option $1" >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
+[[ $# -gt 0 ]] || { sed -n 5,13p "$0" >&2; exit 2; }
+
+cmd=()
+# lock (outermost: waiting for it costs no memory)
+if [[ -n "$lock" ]]; then
+  if command -v flock > /dev/null; then
+    cmd+=(flock "$lock")
+  else
+    cmd+=(python3 -c 'import fcntl, os, sys
+f = open(sys.argv[1], "a"); fcntl.flock(f, fcntl.LOCK_EX); os.set_inheritable(f.fileno(), True)
+os.execvp(sys.argv[2], sys.argv[2:])' "$lock")
+  fi
+fi
+# memory cap
+if [[ "$mem" != none ]]; then
+  b=$(backend) || exit 2
+  if [[ "$b" == systemd ]]; then
+    cmd+=(systemd-run --user --scope --quiet)
+    [[ -n "$slice" ]] && cmd+=(--slice="$slice")
+    [[ -n "$unit" ]] && cmd+=(--unit="$unit")
+    cmd+=(-p MemoryMax="$mem" -p MemorySwapMax=0)
+    [[ -n "$oom" ]] && cmd+=(-p OOMPolicy=continue)
+  elif [[ -n "$unit" ]]; then
+    # Not when it already leads one: a foreground job of an interactive shell does, and leaving the terminal's
+    # foreground group would stop Ctrl-C from reaching it.
+    cmd+=(python3 -c 'import os, sys
+if os.getpgrp() != os.getpid(): os.setpgrp()
+os.execvp(sys.argv[1], sys.argv[1:])')
+  fi
+  # children inherit the decision: no second detection, no second warning
+  export HC_CAP=$b
+fi
+# time limit
+if [[ -n "$tmo" ]]; then
+  if command -v timeout > /dev/null; then cmd+=(timeout "$tmo")
+  elif command -v gtimeout > /dev/null; then cmd+=(gtimeout "$tmo")
+  else
+    cmd+=(python3 -c 'import subprocess, sys
+p = subprocess.Popen(sys.argv[2:])
+try: sys.exit(p.wait(timeout=float(sys.argv[1])))
+except subprocess.TimeoutExpired: p.kill(); p.wait(); sys.exit(124)' "$tmo")
+  fi
+fi
+exec "${cmd[@]}" "$@"

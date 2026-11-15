@@ -1,0 +1,1 @@
+{"binder": "explicit", "idx": 2, "line": 210, "module": "Batteries.Data.Nat.Lemmas", "name": "ha", "proof": "HypCheckProof.Nat.toDigits_append_toDigits_pow_length.h2", "proof_ok": true, "status": "necessary", "tactic": "decide +kernel", "theorem": "_private.Batteries.Data.Nat.Lemmas.0.Nat.toDigits_append_toDigits_pow_length", "type": "a \u2260 0", "witness": "a := 0, b := 0"}

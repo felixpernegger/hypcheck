@@ -1,0 +1,21 @@
+-- v8.1: broken or unusual instances for the range classes (`Std.PRange`), each lawful in some
+-- respects and not in others. Used together with `models_v8.txt` (concatenate).
+-- successor steps by 2: a lawful `UpwardEnumerable`, but not compatible with Nat's `≤`/`<`
+Std.PRange.UpwardEnumerable Nat := { succ? := fun n => some (n + 2), succMany? := fun k n => some (n + 2 * k) }
+-- stops at 3: lawful, not infinite
+Std.PRange.UpwardEnumerable Nat := { succ? := fun n => if n < 3 then some (n + 1) else none, succMany? := fun k n => if n + k ≤ 3 then some (n + k) else none }
+-- `succMany? 0` is not the identity: not lawful
+Std.PRange.UpwardEnumerable Nat := { succ? := fun n => some (n + 1), succMany? := fun k n => some (n + k + 1) }
+-- cyclic on Bool: not lawful (`ne_of_lt` fails), infinite, linear
+Std.PRange.UpwardEnumerable Bool := { succ? := fun b => some !b }
+-- no successors at all
+Std.PRange.UpwardEnumerable Nat := { succ? := fun _ => none, succMany? := fun k n => if k = 0 then some n else none }
+Std.PRange.Least? Nat := ⟨some 1⟩
+Std.PRange.Least? Nat := ⟨none⟩
+Std.PRange.Least? Bool := ⟨some true⟩
+-- sizes that are off by one or constant
+Std.Rxc.HasSize Nat := ⟨fun lo hi => hi + 2 - lo⟩
+Std.Rxo.HasSize Nat := ⟨fun lo hi => hi + 1 - lo⟩
+Std.Rxi.HasSize Nat := ⟨fun _ => 5⟩
+Std.Rxc.HasSize Nat := ⟨fun _ _ => 0⟩
+Std.Rxo.HasSize Nat := ⟨fun _ _ => 0⟩

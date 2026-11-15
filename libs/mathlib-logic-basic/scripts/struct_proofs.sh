@@ -1,0 +1,1 @@
+../../../kit/scripts/struct_proofs.sh

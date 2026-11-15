@@ -1,0 +1,12 @@
+#!/bin/bash
+# CSLib's toolchain `lean` with the search path of `lake env` in $CSLIB_DIR (Cslib + Mathlib
+# + deps oleans), usable from any directory. The path is cached in .leanpath; refresh with `cslean --refresh`
+# after `lake update` (it is just `cd $CSLIB_DIR && lake env printenv LEAN_PATH`).
+D=$(cd "$(dirname "$0")" && pwd)
+CS=${CSLIB_DIR:?set CSLIB_DIR to a CSLib checkout built at commit f8acdb37}   # the CSLib checkout
+if [[ "$1" == --refresh || ! -s "$D/.leanpath" ]]; then
+  (cd "$CS" && lake env printenv LEAN_PATH) > "$D/.leanpath" || exit 1
+  (cd "$CS" && lake env which lean) > "$D/.leanbin" || exit 1
+  [[ "$1" == --refresh ]] && { cat "$D/.leanpath" "$D/.leanbin"; exit 0; }
+fi
+LEAN_PATH=$(cat "$D/.leanpath") exec "$(cat "$D/.leanbin")" "$@"
