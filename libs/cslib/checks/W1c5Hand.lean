@@ -1175,7 +1175,7 @@ theorem t1 : ¬ drop0% Cslib.Logic.Modal.theoryEq_isBisimulation 4 := fun h =>
 -- `Cslib.Logic.Modal.theoryEq_eq_bisimilarity` idx 4: necessary (same image-infinite LTS, no atoms)
 theorem t2 : ¬ drop0% Cslib.Logic.Modal.theoryEq_eq_bisimilarity 4 := fun h => by
   have e := h (m := MI) (fun _ _ => Iff.rfl)
-  have hb : LTS.HomBisimilarity MI.lts .s1 .s2 := e ▸ MIthEq
+  have hb : LTS.HomBisimilarity MI.lts .s1 .s2 := (congrArg (fun f => f St.s1 St.s2) e).mp MIthEq
   obtain ⟨r, hr, hbis⟩ := hb
   exact noBisim r hbis hr
 

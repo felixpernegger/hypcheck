@@ -3,7 +3,7 @@
 # + deps oleans), usable from any directory. The path is cached in .leanpath; refresh with `cslean --refresh`
 # after `lake update` (it is just `cd $CSLIB_DIR && lake env printenv LEAN_PATH`).
 D=$(cd "$(dirname "$0")" && pwd)
-CS=${CSLIB_DIR:?set CSLIB_DIR to a CSLib checkout built at commit f8acdb37}   # the CSLib checkout
+CS=${CSLIB_DIR:?set CSLIB_DIR to a CSLib checkout built at commit 98f9a62a}   # the CSLib checkout
 if [[ "$1" == --refresh || ! -s "$D/.leanpath" ]]; then
   (cd "$CS" && lake env printenv LEAN_PATH) > "$D/.leanpath" || exit 1
   (cd "$CS" && lake env which lean) > "$D/.leanbin" || exit 1

@@ -84,7 +84,7 @@ answer and uses only the standard axioms: `python3 scripts/check_hand.py FILE.le
 - **Disk:** about 3 GB per library, for tools built with the library's Lean version.
 - **Unresolved answers:** how many the tool decides depends on the library. In the published results it decided
   37% overall, from 13.5% (iris-lean) to 66% (Batteries); most of the rest came from AI agents (see the end). It
-  finds necessary hypotheses much more often than removable ones: of the 9,401 removable hypotheses in the published
+  finds necessary hypotheses much more often than removable ones: of the 9,413 removable hypotheses in the published
   results, it found 19%.
 
 ## Checking one theorem

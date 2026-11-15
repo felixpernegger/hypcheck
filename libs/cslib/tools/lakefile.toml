@@ -2,7 +2,7 @@
 # costs ~1.6 GB anonymous memory per process (core oleans re-read into the heap); native: see Methods.md "Port".
 name = "hctools"
 srcDir = "../scripts"
-defaultTargets = ["hypcheck", "propparams", "unused", "unusedtrans", "unusedemit", "instderivable", "nectrans", "twins"]
+defaultTargets = ["hypcheck", "propparams", "unused", "unusedtrans", "unusedemit", "instderivable", "nectrans", "twins", "stmts"]
 
 [[lean_exe]]
 name = "hypcheck"
@@ -42,4 +42,9 @@ supportInterpreter = true
 [[lean_exe]]
 name = "twins"
 root = "Twins"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "stmts"
+root = "Stmts"
 supportInterpreter = true

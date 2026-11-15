@@ -20,9 +20,12 @@ The analysis has been run on these libraries:
 | [Lean 4 core](libs/core/Results.md) (`Init`, `Std`, `Lean`, `Lake`) | lean4 `a2ec8251` | 66,633 | 57,821 | 8,369 | 443 | 0 |
 | Mathlib: [Data](libs/mathlib-data/Results.md), [Logic and Basic](libs/mathlib-logic-basic/Results.md) | Mathlib `bbff2954fe5` | 15,010 | 14,529 | 477 | 4 | 0 |
 | [iris-lean](libs/iris-lean/Results.md) | `8293092f` | 6,260 | 6,035 | 195 | 5 | 25 |
-| [CSLib](libs/cslib/Results.md) | `f8acdb37` | 2,699 | 2,593 | 105 | 1 | 0 |
+| [CSLib](libs/cslib/Results.md) | `98f9a62a` | 2,824 | 2,706 | 117 | 1 | 0 |
 | [Batteries](libs/batteries/Results.md) | `4af7237` | 1,326 | 1,259 | 66 | 1 | 0 |
 | [SampCert](libs/sampcert/Results.md) | `a2c53bb` | 607 | 418 | 189 | 0 | 0 |
+
+CSLib was first analysed at `f8acdb37` and later brought up to `98f9a62a` by re-checking only the theorems that
+changed ([`Methods.md`](Methods.md), "Updating to a new library version").
 
 Private theorems are included (counted separately in each library's results). Each library's `Results.md` (under `libs/`) has the
 breakdown by folder, the patterns among the removable hypotheses, the independent cases and the caveats; library
@@ -48,9 +51,9 @@ breaks its callers.
    uncovered verdicts and rejects non-standard axioms. The tool's own proofs get the same statement check when they
    are found.
 
-Of all 92,535 hypotheses, 54% were decided by the hand passes, 37% by the tool, the detectors and transitive necessity,
+Of all 92,660 hypotheses, 54% were decided by the hand passes, 37% by the tool, the detectors and transitive necessity,
 and 9% (all in Lean core) by a generated tactic for dependent hypotheses. The mechanical share ranges from 13.5%
-(iris-lean) to 66% (Batteries). Removable hypotheses mostly needed the hand passes: 7,628 of the 9,401 (81%).
+(iris-lean) to 66% (Batteries). Removable hypotheses mostly needed the hand passes: 7,640 of the 9,413 (81%).
 
 ## Checking your own library
 

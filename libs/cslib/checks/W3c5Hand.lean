@@ -161,44 +161,44 @@ theorem ndmp5 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.Equiv.mp 5 := fun h =>
 -- `Cslib.Logic.PL.NaturalDeduction.Equiv.mpr` idx 5: necessary (A = ⊥, B = ⊤)
 theorem ndmpr5 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.Equiv.mpr 5 := fun h =>
   noTopBot (@h Unit _ ∅ ⊥ ⊤)
--- `Cslib.Logic.InferenceSystem.DerivableIn.weak` idx 7: necessary (T = {a}, T' = ∅, ⊢ a)
-theorem ndw7 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.weak 7 := fun h =>
-  noAt (@h Unit _ {.atom ()} ∅ ∅ ∅ aU (subset_refl _) derAx)
--- `Cslib.Logic.InferenceSystem.DerivableIn.weak` idx 8: necessary (Γ = {a}, Δ = ∅)
-theorem ndw8 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.weak 8 := fun h =>
-  noAt (@h Unit _ ∅ ∅ {.atom ()} ∅ aU (subset_refl _) (derAss _))
--- `Cslib.Logic.InferenceSystem.DerivableIn.weak` idx 9: necessary (⊢ ⊥)
-theorem ndw9 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.weak 9 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken` idx 8: necessary (T = {a}, T' = ∅, ⊢ a)
+theorem ndw7 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken 8 := fun h =>
+  noAt (@h Unit _ {.atom ()} ∅ ∅ ∅ aU derAx (subset_refl _))
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken` idx 9: necessary (Γ = {a}, Δ = ∅)
+theorem ndw8 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken 9 := fun h =>
+  noAt (@h Unit _ ∅ ∅ {.atom ()} ∅ aU (derAss _) (subset_refl _))
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken` idx 7: necessary (⊢ ⊥)
+theorem ndw9 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken 7 := fun h =>
   noBot (@h Unit _ ∅ ∅ ∅ ∅ ⊥ (subset_refl _) (subset_refl _))
--- `Cslib.Logic.InferenceSystem.DerivableIn.weakTheory` idx 6: necessary (T = {a}, T' = ∅)
-theorem ndwt6 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.weakTheory 6 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ax` idx 7: necessary (T = {a}, T' = ∅)
+theorem ndwt6 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ax 7 := fun h =>
   noAt (@h Unit _ {.atom ()} ∅ ∅ aU derAx)
--- `Cslib.Logic.InferenceSystem.DerivableIn.weakTheory` idx 7: necessary (⊢ ⊥)
-theorem ndwt7 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.weakTheory 7 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ax` idx 6: necessary (⊢ ⊥)
+theorem ndwt7 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ax 6 := fun h =>
   noBot (@h Unit _ ∅ ∅ ∅ ⊥ (subset_refl _))
--- `Cslib.Logic.InferenceSystem.DerivableIn.weakCtx` idx 6: necessary (Γ = {a}, Δ = ∅)
-theorem ndwc6 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.weakCtx 6 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ctx` idx 7: necessary (Γ = {a}, Δ = ∅)
+theorem ndwc6 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ctx 7 := fun h =>
   noAt (@h Unit _ ∅ {.atom ()} ∅ aU (derAss _))
--- `Cslib.Logic.InferenceSystem.DerivableIn.weakCtx` idx 7: necessary (⊢ ⊥)
-theorem ndwc7 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.weakCtx 7 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ctx` idx 6: necessary (⊢ ⊥)
+theorem ndwc7 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_weaken_ctx 6 := fun h =>
   noBot (@h Unit _ ∅ ∅ ∅ ⊥ (subset_refl _))
--- `Cslib.Logic.InferenceSystem.DerivableIn.cut` idx 7: necessary (A = B = ⊥, Γ = Δ = ∅)
-theorem ndcut7 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.cut 7 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_cut` idx 7: necessary (A = B = ⊥, Γ = Δ = ∅)
+theorem ndcut7 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_cut 7 := fun h =>
   noBot (by simpa using @h Unit _ ∅ ∅ ∅ ⊥ ⊥ (by simpa using derAss ⊥))
--- `Cslib.Logic.InferenceSystem.DerivableIn.cut` idx 8: necessary (A = ⊤, B = ⊥)
-theorem ndcut8 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.cut 8 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_cut` idx 8: necessary (A = ⊤, B = ⊥)
+theorem ndcut8 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_cut 8 := fun h =>
   noBot (by simpa using @h Unit _ ∅ ∅ ∅ ⊤ ⊥ derTop)
--- `Cslib.Logic.InferenceSystem.DerivableIn.cut_away` idx 6: necessary (Γ' = {⊥}, B = ⊥)
-theorem ndca6 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.cut_away 6 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_cut_away` idx 6: necessary (Γ' = {⊥}, B = ⊥)
+theorem ndca6 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_cut_away 6 := fun h =>
   noBot (@h Unit _ ∅ ∅ {⊥} ⊥ (by simpa using derAss ⊥))
--- `Cslib.Logic.InferenceSystem.DerivableIn.cut_away` idx 7: necessary (Γ = Γ' = ∅, B = ⊥)
-theorem ndca7 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.cut_away 7 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_cut_away` idx 7: necessary (Γ = Γ' = ∅, B = ⊥)
+theorem ndca7 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_cut_away 7 := fun h =>
   noBot (@h Unit _ ∅ ∅ ∅ ⊥ (by simp))
--- `Cslib.Logic.InferenceSystem.DerivableIn.substAtom` idx 8: necessary (B = ⊥, f = atom)
-theorem ndsa8 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.substAtom 8 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.derivableIn_subst_atom` idx 8: necessary (B = ⊥, f = atom)
+theorem ndsa8 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.derivableIn_subst_atom 8 := fun h =>
   (sound' (fun _ => False) (@h Unit Unit _ _ ∅ .atom ∅ ⊥) (by simp) (by simp) : False)
--- `Cslib.Logic.InferenceSystem.DerivableIn.equiv_top` idx 4: necessary (A = ⊥)
-theorem ndet4 : ¬ drop0% Cslib.Logic.InferenceSystem.DerivableIn.equiv_top 4 := fun h =>
+-- `Cslib.Logic.PL.NaturalDeduction.equiv_top_of_derivableIn` idx 4: necessary (A = ⊥)
+theorem ndet4 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.equiv_top_of_derivableIn 4 := fun h =>
   noTopBot (@h Unit _ ∅ ⊥).mpr
 -- `Cslib.Logic.PL.NaturalDeduction.Equiv.symm` idx 5: necessary (A = ⊥, B = ⊤)
 theorem ndsy5 : ¬ drop0% Cslib.Logic.PL.NaturalDeduction.Equiv.symm 5 := fun h =>

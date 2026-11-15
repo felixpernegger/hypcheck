@@ -1,6 +1,6 @@
 # Playbook: deciding every hypothesis of a Lean library
 
-This is the method that decided all 66,633 Prop hypotheses of Lean core (`Init`, `Std`, `Lean`, `Lake`; workspace `libs/core`), all 2,699 of CSLib (`libs/cslib`), and 99.6% of the 6,260 of iris-lean (`libs/iris-lean`, a separation logic), written so that it can be applied to another library with this tool. `README.md` covers setup; this file covers *what to do, in which order, and what to expect*. The workspace's `Plan.md` is the per-library checklist built from it.
+This is the method that decided all 66,633 Prop hypotheses of Lean core (`Init`, `Std`, `Lean`, `Lake`; workspace `libs/core`), all 2,699 of CSLib at its first analysed commit (`libs/cslib`), and 99.6% of the 6,260 of iris-lean (`libs/iris-lean`, a separation logic), written so that it can be applied to another library with this tool. `README.md` covers setup; this file covers *what to do, in which order, and what to expect*. The workspace's `Plan.md` is the per-library checklist built from it.
 
 ## 1. The question and the verdicts
 

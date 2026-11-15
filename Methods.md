@@ -138,6 +138,21 @@ Before a hand file is merged, `check_hand.py`
 Private theorems cannot be referenced from another module, so their proofs are compiled per module with that module
 as the file's main module (`bymod/`).
 
+## Updating to a new library version
+
+Results refer to one commit of the library. To bring them to a later commit without redoing the analysis (done for
+CSLib, `f8acdb37` → `98f9a62a`; `libs/cslib/Results.md`, "Update to `98f9a62a`"):
+1. Dump the elaborated statement of every theorem at both commits (`libs/cslib/scripts/Stmts.lean`) and compare them
+   exactly (`stmt_diff.py`). Theorems whose statement is unchanged keep their rows; rows of changed or removed
+   theorems are dropped. The comparison is conservative: renumbered hygienic names also count as a change.
+2. Recompile every stored proof against the new commit and re-run `check_hand.py` on every hand file. This is what
+   makes the kept verdicts valid: a necessary proof refutes `T'` with the new definitions, even where a definition
+   changed but the statement did not. Proofs that no longer compile are repaired (renamed constants, reordered
+   binders) and re-checked.
+3. Run the usual pipeline (tool, detectors, transitive necessity, hand passes) on the rows of new and changed
+   theorems only (`HypCheck.lean --skip` with the unchanged theorems). Verdicts of a renamed theorem whose statement
+   is otherwise the same carry over once its proofs compile under the new name.
+
 ## Caveats
 
 - Each hypothesis is checked **on its own**. Two individually removable hypotheses of one theorem may not be removable

@@ -6,5 +6,9 @@ No CSLib defect beyond unneeded hypotheses was found. The removable hypotheses a
 - `[IsOrderedRing R]` in `Polynomial.monotone_eval`/`eval_mono`, derivable (Mathlib's `toIsOrderedRing` needs
   `CommSemiring`);
 - `Nat.segment_zero`: both hypotheses unneeded, also jointly.
+- the six `Cslib.LTS.BisimilarityApprox` lemmas relating the omega stratum to bisimilarity
+  (`isBisimulation_omega`, `bisimilarity_of_omega`, `omega_iff_bisimilarity`, `omega_eq_bisimilarity`,
+  `eq_bisimilarity`, `iff_bisimilarity`; new at `98f9a62a`) need only one of their two `ImageFinite` instances
+  (either one; not neither).
 
 Nothing has been reported upstream yet.
