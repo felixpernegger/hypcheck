@@ -18,6 +18,12 @@ Options:
   --level L          fast | search (default) | thorough: how hard to look for removal proofs
   --removable-only   skip the counterexample search: only look for removable hypotheses (much faster)
   --private          also check private theorems
+  --olean-level L    auto (default) | private | server: how the checker loads the library. `server` (the module
+                     system's level; auto picks it when the first module in scope starts with `module`) loads no
+                     proofs: far less memory, but no proof repair. Private theorems always use `private`
+  --no-exact         leave `exact?` out of the search level (faster, about half the memory per worker)
+  --full-import      load all of ROOT in the checker; by default, when --modules is narrower than ROOT, only the
+                     modules in scope (plus the Mathlib tactic modules the checks use) are loaded
   --inventory-only   set up, self-test and count the hypotheses, then stop (rerun without it to continue)
   --workers N        parallel worker processes (default: from CPU count and free memory)
   -h, --help         this text
@@ -32,6 +38,7 @@ KIT=$(cd "$(dirname "$0")" && pwd)
 [[ $# -ge 2 ]] || { usage >&2; exit 2; }
 LIBDIR=$1; ROOT=$2; shift 2
 MODULES=$ROOT; WS=; NAME=; LEVEL=search; GOAL=both; PRIV=0; WORKERS=; INVONLY=0
+OLEAN=auto; NOEXACT=0; FULLIMPORT=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --modules) MODULES=$2; shift 2 ;;
@@ -42,11 +49,15 @@ while [[ $# -gt 0 ]]; do
     --private) PRIV=1; shift ;;
     --inventory-only) INVONLY=1; shift ;;
     --workers) WORKERS=$2; shift 2 ;;
+    --olean-level) OLEAN=$2; shift 2 ;;
+    --no-exact) NOEXACT=1; shift ;;
+    --full-import) FULLIMPORT=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "hypcheck: unknown option $1" >&2; usage >&2; exit 2 ;;
   esac
 done
 case "$LEVEL" in fast|search|thorough) ;; *) echo "hypcheck: --level must be fast, search or thorough" >&2; exit 2 ;; esac
+case "$OLEAN" in auto|private|server) ;; *) echo "hypcheck: --olean-level must be auto, private or server" >&2; exit 2 ;; esac
 for c in python3 lake; do
   command -v $c > /dev/null || { echo "hypcheck: '$c' not found (needed: bash, Python 3, elan/lake)" >&2; exit 1; }
 done
@@ -121,12 +132,44 @@ fi
 step structural bash -c 'scripts/struct.sh > runs/mech/struct.log 2>&1 && scripts/struct_proofs.sh >> runs/mech/struct.log 2>&1 || { tail runs/mech/struct.log; exit 1; }'
 
 # 5. HypCheck: removal tactics and proof repair for removable, small values and models for counterexamples
-KEY=$LEVEL-$GOAL
 cat scripts/models.txt > runs/mech/models.txt
 if [[ -f "scripts/models_$NAME.txt" ]]; then cat "scripts/models_$NAME.txt" >> runs/mech/models.txt; fi
-ARGS=(); for m in ${ROOT//,/ }; do ARGS+=(--import "$m"); done
+# Imports: all of ROOT, or (default when --modules is narrower) only the built modules under the --modules prefixes,
+# plus the Mathlib tactic modules of the removal pool where the library has them (they parse only when imported).
+# On Mathlib.Order this cut a worker from ~7.6 GB to 1.2-1.6 GB, with the same verdicts on a 79-row sample.
+OLEANDIR=$LIBDIR/.lake/build/lib/lean
+IMPORTS=()
+if (( ! FULLIMPORT )) && [[ "$MODULES" != "$ROOT" ]]; then
+  for m in ${MODULES//,/ }; do
+    d=$OLEANDIR/${m//.//}
+    [[ -f "$d.olean" ]] && IMPORTS+=("$m")
+    if [[ -d "$d" ]]; then
+      while IFS= read -r f; do f=${f#"$OLEANDIR/"}; f=${f%.olean}; IMPORTS+=("${f//\//.}"); done \
+        < <(find "$d" -name '*.olean' | sort)
+    fi
+  done
+  for m in Mathlib.Tactic.Positivity Mathlib.Tactic.Linarith Mathlib.Tactic.NormNum Mathlib.Tactic.Tauto; do
+    [[ -f "$OLEANDIR/${m//.//}.olean" ]] && IMPORTS+=("$m")
+  done
+  [[ ${#IMPORTS[@]} -gt 0 ]] || { echo "hypcheck: no built modules under $MODULES in $OLEANDIR" >&2; exit 1; }
+else
+  IMPORTS=(${ROOT//,/ })
+fi
+# Module system: `server` level when the first module in scope is a `module` file.
+if [[ $OLEAN == auto ]]; then
+  OLEAN=private; first=${MODULES%%,*}
+  for src in "$LIBDIR/${first//.//}.lean" $(find "$LIBDIR/${first//.//}" -name '*.lean' 2> /dev/null | sort | head -1); do
+    if [[ -f "$src" ]]; then grep -q '^module' "$src" && OLEAN=server; break; fi
+  done
+fi
+KEY=$LEVEL-$GOAL; [[ $OLEAN == server ]] && KEY=$KEY-server; (( NOEXACT )) && KEY=$KEY-noexact
+say "checker: ${#IMPORTS[@]} import(s), olean level $OLEAN$( (( NOEXACT )) && echo ', no exact?')"
+ARGS=(); for m in "${IMPORTS[@]}"; do ARGS+=(--import "$m"); done
 for m in ${MODULES//,/ }; do ARGS+=(--module "$m"); done
 ARGS+=(--level "$LEVEL" --goal "$GOAL" --models runs/mech/models.txt)
+(( NOEXACT )) && ARGS+=(--no-exact)
+# library tactics (lines `remove|cex|prem NAME := TACTIC`), e.g. a decision procedure of the library
+[[ -f "scripts/tactics_$NAME.txt" ]] && ARGS+=(--extra-tacs "scripts/tactics_$NAME.txt")
 open_rows() {  # BASE: are there unresolved rows? (the results files start out as the inventory, all unresolved)
   [[ -f "results/$1.jsonl" ]] || python3 -c 'import sys; sys.path.insert(0, "scripts"); import results_io as io
 rows = io.load(sys.argv[1])
@@ -137,7 +180,8 @@ run_tool() {  # BASE
   local out=runs/mech/$KEY/$1.jsonl extra=(); mkdir -p "runs/mech/$KEY"
   local nc=
   # private proofs only compile under their own module name (scripts/priv/compile_priv.py in the merge step)
-  if [[ $1 == private ]]; then extra=(--only-private); nc=1; fi
+  if [[ $1 == private ]]; then extra=(--only-private --olean-level private); nc=1  # private constants need `private`
+  else extra=(--olean-level "$OLEAN"); fi
   if ! open_rows "$1"; then say "no open $1 rows"; return 0; fi
   say "$(wc -l < "results/$1_unresolved.jsonl") open $1 hypotheses; progress every minute"
   HC_UNIT=hc-$NAME-$1 PROGRESS=60 NO_COMPILE=$nc scripts/run.sh "$WORKERS" "$out" "${ARGS[@]}" "${extra[@]}" \

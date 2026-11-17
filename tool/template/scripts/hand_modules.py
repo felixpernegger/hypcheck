@@ -7,6 +7,10 @@ elaborators, so two hand files can't be imported together. Here the header is co
 each copy runs/reuse/mods/RU_<stem>.lean imports it instead. Files that don't start with the header are skipped.
 Benchmark (iris-lean, all 73 wave files): 6 open rows decided through another file's helper, 3 of them not found
 by rem_trans.py; cheap (~10 min compile, then a normal tool run).
+Module-system headers (`module` first): RU files become modules too, but hand-file declarations stay private to
+their module (a `public section` fails when proofs use library-private lemmas), so `exact?` cannot use them; there
+only the agents' model games carry over, as `--models` terms. Hand files that define the same elaborator cannot be
+imported together: strip the duplicate from all but one RU file and import that one.
 
 Usage (from the workspace root): python3 scripts/hand_modules.py [PATTERN=checks/*Hand.lean] [JOBS=3]
 then:  HC_EXTRA_PATH=$PWD/runs/reuse/mods scripts/run.sh 3 runs/reuse/out.jsonl --module ROOT --redo OPEN_ROWS \\
@@ -36,7 +40,14 @@ def main():
     open(f'{MODS}/RUHeader.lean', 'w').write(H)
     if compile_mod('RUHeader')[1]:
         sys.exit('header does not compile')
-    imports = '\n'.join(l for l in H.splitlines() if l.startswith('import '))
+    is_module = H.lstrip().startswith('module')
+    if is_module:
+        # module-system header: RU files are modules that publicly import RUHeader and repeat the header's other
+        # (private / `import all`) imports, since those are not re-exported
+        imports = '\n'.join(l for l in H.splitlines()
+                             if (l.startswith('import ') or l.startswith('meta import ')) and l.strip())
+    else:
+        imports = '\n'.join(l for l in H.splitlines() if l.startswith('import '))
     names, skipped = [], []
     for f in sorted(glob.glob(pat)):
         src = open(f).read()
@@ -44,7 +55,8 @@ def main():
         if not src.startswith(H):
             skipped.append(stem)
             continue
-        open(f'{MODS}/RU_{stem}.lean', 'w').write('import RUHeader\n' + imports + '\n' + src[len(H):])
+        pre = ('module\npublic import RUHeader\n' if is_module else 'import RUHeader\n') + imports + '\n'
+        open(f'{MODS}/RU_{stem}.lean', 'w').write(pre + src[len(H):])
         names.append(f'RU_{stem}')
     ok = []
     with cf.ThreadPoolExecutor(jobs) as ex:

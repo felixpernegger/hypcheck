@@ -73,6 +73,8 @@ answer and uses only the standard axioms: `python3 scripts/check_hand.py FILE.le
 | `--inventory-only` | Set up and count the hypotheses, then stop. Run the same command without it to continue. |
 | `--removable-only` | Only look for removable hypotheses. Much faster. |
 | `--level fast` / `search` / `thorough` | How hard to look for proofs. Default `search`. `fast` is quicker; `thorough` searches deeper and is slower. |
+| `--olean-level auto` / `private` / `server` | How the checker loads the library. `auto` (default) picks `server` for libraries that use the module system: much less memory, but no proof repair. |
+| `--no-exact` | Leave the slow library search `exact?` out. Faster, about half the memory per worker. |
 | `--workers N` | Number of parallel processes. Default: chosen from your CPU count and free memory. |
 | `--name NAME` | Workspace name. Default: the library folder's name in lower case. |
 | `--workspace DIR` | Where to put the results. Default `workspaces/<name>` in this repository (ignored by git). |

@@ -51,6 +51,7 @@ Run `date` at the start (first log line `{"start": …}`). **Stop starting new r
 ## Memory (shared with other agents)
 
 - **Never run `lean`, `lake` or the lean-lsp MCP tools directly.** Use `scripts/lean.sh FILE.lean` (from `@WS@`): the library's Lean, ≤ 2.5 GB per call, all agents capped together, 15 min timeout (`TMO=120` for searches).
+- **Every other program you run (Python searches, game or algebra calculators, generators) also goes under the cap:** `scripts/capped --mem 1500M --slice @SLICE@ --timeout 600 -- python3 FILE.py`. Bound search depth and caches so a script stays far below 1.5 GB; if it is killed, shrink the search, never raise the cap. (An uncapped search once grew to 7 GB and crashed the user's editor.)
 - At most one Lean process at a time; if a compile is killed, split it. Develop in small scratch files (header copy + attempt); compile the whole output file only near the end (full-file compiles share one lock, so a short wait is normal).
 
 ## Checks before you finish (required)

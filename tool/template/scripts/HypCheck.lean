@@ -1,5 +1,5 @@
 /-
-[HypCheck v12.2: CSLib port v11.1 plus the changes from a benchmark of the mechanical checks;
+[HypCheck v12.3: CSLib port v11.1 plus the changes from a benchmark of the mechanical checks;
 version history in tool/PLAYBOOK.md "Tool version".]
 For every Prop-valued parameter `hᵢ : Hᵢ` of the selected theorems `T : ∀ xs, C`, decide mechanically
 whether it can be removed. Let `T'` be `T` without `hᵢ`.
@@ -38,7 +38,7 @@ in `FILE` (e.g. the unresolved results of an earlier run).
 
 Usage:
   scripts/hcrun hypcheck [--import M]... [--module M]... [--ns N]... [--shard k/N]
-      [--models FILE] [--claim-dir D] [--skip RESULTS.jsonl] [--only-dependent] [--include-internal] [--include-private] [--only-private] [--recheck RESULTS.jsonl] [--redo RESULTS.jsonl] [--hb N] [--cex-hb N] [--cex-cap N] [--cex-time SECONDS] [--proofs FILE.lean] [--level fast|search|thorough] [--goal both|removable] [-o FILE]
+      [--models FILE] [--claim-dir D] [--skip RESULTS.jsonl] [--only-dependent] [--include-internal] [--include-private] [--only-private] [--recheck RESULTS.jsonl] [--redo RESULTS.jsonl] [--hb N] [--cex-hb N] [--cex-cap N] [--cex-time SECONDS] [--proofs FILE.lean] [--level fast|search|thorough] [--no-exact] [--olean-level private|server] [--goal both|removable] [-o FILE]
 Defaults: --import = roots of the --module arguments, --module Init.Data.Nat, --hb 5000, --cex-hb 300, --cex-cap 1500 (heartbeats in thousands).
 Output: JSON Lines, one object per Prop parameter.
 Parallel runs: use `run.sh`, which starts worker processes that share a `--claim-dir`.
@@ -60,6 +60,12 @@ structure Opts where
   first : Bool := false
   /-- v12: 0 fast, 1 search (+ `exact?`, proof repair), 2 thorough (deeper repair). -/
   level : Nat := 0
+  /-- `--no-exact`: leave `exact?` out of the search-level removal pool (it is the slowest pool tactic). -/
+  noExact : Bool := false
+  /-- `--olean-level`: module-system import level. Below `private` (`server`), module-system libraries load
+  without proofs (theorems as axioms, much less memory), so proof repair is off (`noProofs`). -/
+  oleanLevel : OLeanLevel := .private
+  noProofs : Bool := false
   repair : Bool := false
   repairHb : Nat := 300
   repairHoles : Nat := 60
@@ -78,6 +84,10 @@ structure Opts where
   /-- With `--recheck FILE`: also retry removal, and seed the search with the recorded witnesses. -/
   redo : Bool := false
   models? : Option System.FilePath := none
+  /-- `--extra-tacs FILE` (v12.3): library tactics, lines `remove|cex|prem NAME := TACTIC`, appended to the
+  removal pool, the counterexample closers or the premise closers (`tool/hypcheck` passes
+  `scripts/tactics_<name>.txt` when it exists). -/
+  extraTacs? : Option System.FilePath := none
   out? : Option System.FilePath := none
   proofs? : Option System.FilePath := none
 
@@ -94,6 +104,7 @@ def parseArgs (o : Opts) : List String → Except String Opts
   | "--recheck" :: f :: r => parseArgs { o with recheck? := some f } r
   | "--redo" :: f :: r => parseArgs { o with recheck? := some f, redo := true } r
   | "--models" :: f :: r => parseArgs { o with models? := some f } r
+  | "--extra-tacs" :: f :: r => parseArgs { o with extraTacs? := some f } r
   | "--only-private" :: r => parseArgs { o with includePrivate := true, onlyPrivate := true } r
   | "--include-private" :: r => parseArgs { o with includePrivate := true } r
   | "--include-internal" :: r => parseArgs { o with includeInternal := true } r
@@ -102,6 +113,11 @@ def parseArgs (o : Opts) : List String → Except String Opts
   | "--claim-dir" :: d :: r => parseArgs { o with claimDir? := some d } r
   | "--no-cex" :: r => parseArgs { o with noCex := true } r
   | "--first" :: r => parseArgs { o with first := true } r
+  | "--no-exact" :: r => parseArgs { o with noExact := true } r
+  | "--olean-level" :: l :: r => match l with
+    | "private" => parseArgs { o with oleanLevel := .private } r
+    | "server" => parseArgs { o with oleanLevel := .server } r
+    | _ => throw s!"--olean-level: private or server, not {l}"
   | "--level" :: l :: r => match l with
     | "fast" => parseArgs { o with level := 0 } r
     | "search" => parseArgs { o with level := 1 } r
@@ -250,6 +266,14 @@ def ratLiterals (e : Expr) : MetaM Expr :=
     let num ← if n ≥ 0 then mkNumeral rat n.toNat else mkAppM ``Neg.neg #[← mkNumeral rat n.natAbs]
     return .done (← if d == 1 then pure num else mkAppM ``HDiv.hDiv #[num, ← mkNumeral rat d]))
 
+/-- The environment with every delaborator that a library (not Lean itself) registered erased (v12.3).
+Such delaborators may drop arguments, even under `pp.explicit`: combinatorial-games prints
+`OfSets.ofSets (Player.cases s t) h` as `!{s | t}`, whose macro then has to re-prove `h` by a tactic. -/
+def withoutLibraryDelabs (env : Environment) : Environment :=
+  PrettyPrinter.Delaborator.delabAttribute.ext.modifyState env fun s =>
+    { s with erased := s.table.fold (init := s.erased) fun acc _ es =>
+        es.foldl (init := acc) fun acc e => if e.isBuiltin then acc else acc.insert e.declName }
+
 /-- Prints a closed term so that it parses back: full names, proofs instead of `⋯`, one line. With
 the option `hypcheck.explicit` also all implicit arguments and raw literals, which round-trips where
 the readable form loses information (types of `none`, model instances, coercions). With
@@ -260,17 +284,30 @@ def ppSrc (e : Expr) : MetaM String := do
   let holes := (← getOptions).getBool `hypcheck.holes
   let e ← if holes then withProofHoles e else pure e
   let explicit := (← getOptions).getBool `hypcheck.explicit
-  let f ← withOptions (fun o => o |>.setBool `pp.fullNames true |>.setBool `pp.proofs true
+  let univ := (← getOptions).getBool `hypcheck.universes
+  let env ← getEnv
+  if (← getOptions).getBool `hypcheck.plain then setEnv (withoutLibraryDelabs env)
+  let f ← tryFinally (withOptions (fun o => o |>.setBool `pp.fullNames true |>.setBool `pp.proofs true
       |>.setBool `pp.funBinderTypes true |>.setBool `pp.structureInstanceTypes true
       |>.setBool `pp.explicit explicit |>.setBool `pp.natLit explicit
-      |>.set `format.width (1000000 : Nat)) (ppExpr e)
+      |>.setBool `pp.universes univ
+      |>.set `format.width (1000000 : Nat)) (ppExpr e)) (setEnv env)
   let s := (toString f).replace "\n" "\n    "
   return if holes then (s.replace "HCGETELEM" "GetElem.getElem").replace "HCHOLE" holeTac else s
 
-/-- The readable and the explicit rendering of a proof block, then both with proof holes (v7.1). -/
+/-- The readable and the explicit rendering of a proof block, each also with universe levels (v12.3), the
+explicit ones once more without the library's delaborators (v12.3, `withoutLibraryDelabs`), then readable and
+explicit with proof holes (v7.1). The levels rendering is for refutations at level 0 of universe-polymorphic
+statements: a bare `IGame` re-elaborates as `IGame.{u_1}` ("statement differs"); found in combinatorial-games. -/
 def bothSrc (gen : MetaM String) : MetaM (Array String) := do
   let holes (o : Options) := o.setBool `hypcheck.holes true
-  return #[← gen, ← withOptions (·.setBool `hypcheck.explicit true) gen,
+  let univ (o : Options) := o.setBool `hypcheck.universes true
+  let plain (o : Options) := o.setBool `hypcheck.plain true
+  return #[← gen, ← withOptions univ gen,
+    ← withOptions (·.setBool `hypcheck.explicit true) gen,
+    ← withOptions (univ <| ·.setBool `hypcheck.explicit true) gen,
+    ← withOptions (plain <| ·.setBool `hypcheck.explicit true) gen,
+    ← withOptions (plain <| univ <| ·.setBool `hypcheck.explicit true) gen,
     ← withOptions holes gen, ← withOptions (holes <| ·.setBool `hypcheck.explicit true) gen]
 
 /-- `theorem n.{us} : ty := proof`, declaring only the universe parameters `ty` uses. -/
@@ -1174,6 +1211,28 @@ def stdMapTacs (c : Expr) : TermElabM (Array (String × TSyntax `tactic)) := do
   return #[("std-eval", ← `(tactic| simp +ground +decide [$lemmas,*])),
     ("std-eval-all", ← `(tactic| simp_all +ground +decide [$lemmas,*]))]
 
+/-- Filter statements at concrete filters (`⊤`, `⊥`, `pure a`, `𝓟 s`) and sets (Mathlib.Order probe): unfold
+eventually/frequently, `=ᶠ`/`≤ᶠ`, `Tendsto` and `NeBot` to membership, then decide over a finite carrier. Only
+for statements that mention a `Filter.*` constant; the lemma names parse but fail harmlessly without Mathlib. -/
+def filterLemmaNames : List Name := [`Filter.EventuallyEq, `Filter.EventuallyLE, `Filter.EventuallyEqSet,
+  `Filter.EventuallySubset, `Filter.eventually_top, `Filter.eventually_bot, `Filter.eventually_pure,
+  `Filter.eventually_principal, `Filter.frequently_top, `Filter.frequently_bot, `Filter.frequently_pure,
+  `Filter.frequently_principal, `Filter.tendsto_pure, `Filter.tendsto_top, `Filter.tendsto_bot,
+  `Filter.tendsto_principal, `Filter.tendsto_principal_principal, `Filter.tendsto_pure_pure,
+  `Filter.principal_neBot_iff, `Filter.not_neBot, `Filter.mem_principal, `Filter.mem_top, `Filter.mem_pure,
+  `Filter.mem_bot, `Filter.principal_eq_bot_iff, `Filter.pure_ne_bot, `Filter.top_ne_bot, `Set.ext_iff,
+  `Set.subset_def, `Set.le_eq_subset, `Set.mem_setOf_eq, `Set.nonempty_def]
+
+def filterTacs (c : Expr) : TermElabM (Array (String × TSyntax `tactic)) := do
+  unless (c.find? fun s => s.isConst && s.constName!.getRoot == `Filter).isSome do return #[]
+  let env ← getEnv
+  let ns := filterLemmaNames.filter env.contains
+  if ns.isEmpty then return #[]
+  let lemmas ← ns.toArray.mapM fun n => `(Lean.Parser.Tactic.simpLemma| $(mkIdent n):ident)
+  return #[("filter-eval", ← `(tactic| (simp +decide [$lemmas,*]; done))),
+    ("filter-eval-decide", ← `(tactic| (simp [$lemmas,*] <;> decide))),
+    ("filter-eval-all", ← `(tactic| (intros; simp_all +decide [$lemmas,*]; done)))]
+
 def mentionsGrindPreds (e : Expr) : Bool :=
   (e.find? fun s => s.isConst && grindPredNames.contains s.constName!).isSome
 
@@ -1357,7 +1416,14 @@ unsafe def findCounterexample (o : Opts) (decl : Name) (lps : List Name) (tp : E
               else if (← firstProof c mapTacs o.cexHb).isSome then pure (some false)
               else pure none
             else pure probe
-          let dynTacs := dynTacs ++ mapTacs
+          -- Filters (Mathlib): unfold to membership and decide.
+          let filtTacs ← filterTacs c
+          let probe ← if probe.isNone && !filtTacs.isEmpty then do
+              if (← firstProof (mkNot c) filtTacs o.cexHb).isSome then pure (some true)
+              else if (← firstProof c filtTacs o.cexHb).isSome then pure (some false)
+              else pure none
+            else pure probe
+          let dynTacs := dynTacs ++ mapTacs ++ filtTacs
           let clsTacs ← if probe.isNone then classRefuteTacs c models mined o.cexHb else pure #[]
           let probe := if probe.isNone && !clsTacs.isEmpty then some true else probe
           let cexTacs := clsTacs ++ cexTacs ++ dynTacs
@@ -1518,6 +1584,23 @@ def parsedTacs (srcs : List (String × String)) : TermElabM (Array (String × TS
     | .error _ => pure ()
   return out
 
+/-- The `--extra-tacs` lines of one kind (`remove`, `cex` or `prem`); unparsable tactics are reported once. -/
+def extraTacsOf (o : Opts) (kind : String) : TermElabM (Array (String × TSyntax `tactic)) := do
+  let some f := o.extraTacs? | return #[]
+  let mut out := #[]
+  for l in (← IO.FS.lines f) do
+    let l := l.trimAscii.toString
+    if l.isEmpty || l.startsWith "#" then continue
+    let some (k, rest) := (match l.splitOn " " with | k :: r => some (k, " ".intercalate r) | [] => none) | continue
+    unless k == kind do continue
+    match rest.splitOn " := " with
+    | n :: src@(_ :: _) =>
+      match Parser.runParserCategory (← getEnv) `tactic (" := ".intercalate src) with
+      | .ok stx => out := out.push (n.trimAscii.toString, ⟨stx⟩)
+      | .error e => IO.eprintln s!"--extra-tacs: cannot parse {n}: {e}"
+    | _ => IO.eprintln s!"--extra-tacs: bad line {l}"
+  return out
+
 unsafe def checkTheorem (o : Opts) (ci : TheoremVal) (only? : Option (Array Nat) := none)
     (models : Models := #[]) (witnesses : Std.HashMap Nat String := {}) :
     TermElabM (Array (Json × Option ProofBlock)) := do
@@ -1550,7 +1633,8 @@ unsafe def checkTheorem (o : Opts) (ci : TheoremVal) (only? : Option (Array Nat)
     ("linarith", "(intros; linarith)"),
     ("positivity", "(intros; positivity)"),
     ("norm_num", "(intros; norm_num at *; done)")]) ++
-    (← if o.level ≥ 1 then parsedTacs [("exact?", "(intros; exact?)")] else pure #[])
+    (← extraTacsOf o "remove") ++
+    (← if o.level ≥ 1 && !o.noExact then parsedTacs [("exact?", "(intros; exact?)")] else pure #[])
   let removeTacs ← match o.tacs? with
     | none => pure removeTacs
     | some f => do
@@ -1588,7 +1672,7 @@ unsafe def checkTheorem (o : Opts) (ci : TheoremVal) (only? : Option (Array Nat)
     -- (e.g. `(bvar 0).LC`), `norm_num` evaluates Mathlib numerals/sets.
     ("norm_num", "norm_num"),
     ("nofun", "nofun"),
-    ("simp-sets", "simp [Set.ext_iff, Set.mem_def] <;> decide")])
+    ("simp-sets", "simp [Set.ext_iff, Set.mem_def] <;> decide")]) ++ (← extraTacsOf o "cex")
   let premTacs := #[
     ("to-decidable", ← `(tactic| (simp only [Array.perm_iff_toList_perm, Vector.perm_iff_toList_perm] <;> decide))),
     ("decide", ← `(tactic| decide)),
@@ -1606,7 +1690,7 @@ unsafe def checkTheorem (o : Opts) (ci : TheoremVal) (only? : Option (Array Nat)
     -- v11 (CSLib): premises of inductive predicates on literal terms (`(fvar 0).LC`), Mathlib numerals.
     ("constructor", "(repeat' constructor) <;> done"),
     ("aesop", "aesop"),
-    ("norm_num", "norm_num")])
+    ("norm_num", "norm_num")]) ++ (← extraTacsOf o "prem")
   let directTacs := #[
     ("simp_all", ← `(tactic| (simp_all; done))),
     ("grind", ← `(tactic| grind))]
@@ -1793,7 +1877,7 @@ unsafe def checkTheorem (o : Opts) (ci : TheoremVal) (only? : Option (Array Nat)
           else
             -- v12: proof repair (level search/thorough). Its proof is stored by `scripts/repair_proofs.sh`
             -- (`hc_repair% T i`), not here, so the row has no `proof_ok` and `merge_tool.py` skips it.
-            let repaired ← if o.level == 0 || (only?.isSome && !o.redo) then pure false else do
+            let repaired ← if o.level == 0 || o.noProofs || (only?.isSome && !o.redo) then pure false else do
               let holeTacs ← parsedTacs [("infer_instance", "(intros; infer_instance)"), ("assumption", "assumption"), ("trivial", "(intros; trivial)"),
                 ("omega", "(intros; omega)"), ("simp_all", "(intros; simp_all; done)"),
                 ("solve_by_elim", "(intros; solve_by_elim)"), ("grind", "(intros; grind)")]
@@ -1879,7 +1963,10 @@ unsafe def verifyBlock (env : Environment) (ctx : Core.Context) (pb : ProofBlock
     for (n, ty) in expect do
       -- Helper declarations are optional (renderings differ in which ones they use); the main one
       -- is required.
-      let some ci := env'.find? n | if n == pb.decl then return some s!"{n} was not added" else continue
+      -- Under `--olean-level server` the environment counts as a `module`, where declarations are private
+      -- by default: look the name up in its private form too.
+      let some ci := (env'.find? n).orElse (fun _ => env'.find? (mkPrivateName env' n))
+        | if n == pb.decl then return some s!"{n} was not added" else continue
       if ci.value?.any (·.hasSorry) then return some s!"{n} uses sorry"
       unless ci.type == ty || (← isDefEq ci.type ty) do
         return some s!"{n}: statement differs, elaborated as {← ppExpr ci.type}"
@@ -1900,7 +1987,11 @@ unsafe def main (args : List String) : IO UInt32 := do
   initSearchPath (← getBuildDir)
   let imports := if o.imports.isEmpty then (modules.map (·.getRoot)).toList.eraseDups.toArray
     else o.imports
-  let env ← importModules (imports.map ({ module := · })) {} (loadExts := true)
+  -- `--olean-level server` imports like a `module` file with `public import`s: module-system libraries load
+  -- without proofs (and without private constants' bodies), which needs far less memory; no proof repair then.
+  let lvl := o.oleanLevel
+  let env ← importModules (imports.map ({ module := · })) {} (loadExts := true) (level := lvl)
+  let o := { o with noProofs := lvl != OLeanLevel.private }
   let withGrindDec := env.contains `Lean.Grind.CommRing.PPoly.NonNeg
   let env ← if withGrindDec then do
       let (env', msgs) ← Elab.process grindDecSrc env {} "<grindDec>"
@@ -1920,7 +2011,14 @@ unsafe def main (args : List String) : IO UInt32 := do
     for mod in env.header.moduleNames, data in env.header.moduleData do
       unless modules.any (·.isPrefixOf mod) do continue
       for n in data.constNames do
-        let some (.thmInfo ci) := env.find? n | continue
+        -- Below `.private`, module-system theorems are imported as axioms (statement only).
+        let some ci := (match env.find? n with
+          | some (.thmInfo ci) => some ci
+          | some (.axiomInfo ai) => if lvl != OLeanLevel.private then
+              some ({ name := ai.name, levelParams := ai.levelParams, type := ai.type,
+                      value := mkConst ai.name (ai.levelParams.map mkLevelParam), all := [ai.name] } : TheoremVal)
+            else none
+          | _ => none) | continue
         -- Private names count as internal details themselves, so check the user-facing part.
         if ((privateToUserName n).isInternalDetail && !o.includeInternal) ||
             (isPrivateName n && !o.includePrivate) then continue
@@ -1978,7 +2076,8 @@ unsafe def main (args : List String) : IO UInt32 := do
       pure ms
   let proofsOut? ← o.proofs?.mapM fun f => do
     let h ← IO.FS.Handle.mk f .write
-    for i in imports do h.putStrLn s!"import {i}"
+    if lvl != OLeanLevel.private then h.putStrLn "module"
+    for i in imports do h.putStrLn (if lvl != OLeanLevel.private then s!"public import {i}" else s!"import {i}")
     if withGrindDec then h.putStrLn grindDecSrc
     h.putStrLn s!"\n/-! Proofs emitted by HypCheck.lean (Lean {Lean.versionString}). -/\n"
     h.flush
