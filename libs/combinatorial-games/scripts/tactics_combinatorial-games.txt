@@ -1,0 +1,9 @@
+# Library tactics for HypCheck (--extra-tacs): KIND NAME := TACTIC, KIND = remove | cex | prem.
+# game_cmp is the library's decision procedure for concrete short games (pilot 2026-11-14: +2 of 100 rows;
+# `infer_instance` closes instance premises such as `[IGame.Numeric 0]`).
+cex game_cmp := (game_cmp; done)
+cex simp-game_cmp := (simp [game_cmp]; done)
+cex simp; game_cmp := (simp <;> game_cmp <;> done)
+prem game_cmp := (game_cmp; done)
+prem infer_instance := infer_instance
+prem simp-game_cmp := (simp [game_cmp]; done)

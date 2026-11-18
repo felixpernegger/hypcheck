@@ -1,0 +1,72 @@
+-- CSLib counterexample models (v11): `TYPE := TERM`, one per line, as in hypcheck's models.txt.
+-- Seeded from the 100-row pilot's unresolved rows (runs/pilot/). Type variables become Nat (then Bool)
+-- before matching, so models are stated at Nat/Bool.
+-- Untyped locally nameless λ-terms (Var := ℕ): closed/open, locally closed or not (`bvar` dangling).
+Cslib.LambdaCalculus.LocallyNameless.Untyped.Term ℕ := .fvar 0
+Cslib.LambdaCalculus.LocallyNameless.Untyped.Term ℕ := .bvar 0          -- not locally closed
+Cslib.LambdaCalculus.LocallyNameless.Untyped.Term ℕ := .abs (.bvar 0)   -- identity
+Cslib.LambdaCalculus.LocallyNameless.Untyped.Term ℕ := .fvar 1
+Cslib.LambdaCalculus.LocallyNameless.Untyped.Term ℕ := .app (.abs (.bvar 0)) (.fvar 0)  -- β-redex
+Cslib.LambdaCalculus.LocallyNameless.Untyped.Term ℕ := .abs (.bvar 1)   -- dangling under binder
+Cslib.LambdaCalculus.LocallyNameless.Untyped.Term ℕ := .app (.fvar 0) (.fvar 1)
+-- System F<: types and terms (Var := ℕ)
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Ty ℕ := .top
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Ty ℕ := .fvar 0
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Ty ℕ := .bvar 0               -- not locally closed
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Ty ℕ := .arrow .top .top
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Ty ℕ := .fvar 1
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Term ℕ := .fvar 0
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Term ℕ := .bvar 0             -- not locally closed
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Term ℕ := .abs .top (.bvar 0)
+Cslib.LambdaCalculus.LocallyNameless.Fsub.Term ℕ := .app (.abs .top (.bvar 0)) (.fvar 0)
+-- SKI combinators
+Cslib.SKI := .S
+Cslib.SKI := .K
+Cslib.SKI := .I
+Cslib.SKI := .app .I .I
+Cslib.SKI := .app .K .I
+Cslib.SKI := .app (.app .K .I) .S
+-- Labelled transition systems on small carriers
+Cslib.LTS ℕ ℕ := ⟨fun s _ t => t = s + 1⟩      -- infinite chain, deterministic, image-finite
+Cslib.LTS ℕ ℕ := ⟨fun _ _ _ => False⟩           -- no transitions
+Cslib.LTS ℕ ℕ := ⟨fun s _ t => t = s⟩           -- self-loops only
+Cslib.LTS ℕ ℕ := ⟨fun s μ t => t = s + 1 ∧ μ = 0⟩
+Cslib.LTS ℕ ℕ := ⟨fun s _ t => t ≤ s + 1⟩       -- nondeterministic
+Cslib.LTS ℕ Bool := ⟨fun s μ t => t = s + 1 ∧ μ = true⟩
+Cslib.LTS Bool Bool := ⟨fun s μ t => t = !s ∧ μ = true⟩
+Cslib.LTS Bool Bool := ⟨fun s _ t => s = false ∧ t = true⟩
+Cslib.LTS Bool Bool := ⟨fun _ _ _ => True⟩
+-- Relations on Bool (finite carrier: ∀/∃ are decidable)
+Bool → Bool → Prop := fun a b => a = false ∧ b = true   -- one edge
+Bool → Bool → Prop := fun a b => a ≠ b                  -- symmetric, irreflexive
+Bool → Bool → Prop := fun _ _ => True
+Bool → Bool → Prop := fun _ _ => False
+Bool → Bool → Prop := fun a b => a = b
+Bool → Bool → Prop := fun a _ => a = false
+-- Relations on ℕ beyond models.txt
+ℕ → ℕ → Prop := fun a b => b = a + 1                      -- successor
+ℕ → ℕ → Prop := fun a b => a = 0 ∧ (b = 1 ∨ b = 2)       -- branching, not confluent
+ℕ → ℕ → Prop := fun a b => (a = 0 ∧ b = 1) ∨ (a = 1 ∧ b = 0)  -- 2-cycle
+-- Sets and finite sets
+Set ℕ := ∅
+Set ℕ := {0}
+Set ℕ := {1}
+Set ℕ := {0, 1}
+Set ℕ := Set.univ
+Set ℕ := {n | 0 < n}
+Set Bool := ∅
+Set Bool := {true}
+Set Bool := Set.univ
+Finset ℕ := ∅
+Finset ℕ := {0}
+Finset ℕ := {1}
+Finset ℕ := {0, 1}
+Finset Bool := ∅
+Finset Bool := {true}
+Finset Bool := Finset.univ
+-- ω-sequences
+Cslib.ωSequence ℕ := ⟨fun n => n⟩
+Cslib.ωSequence ℕ := ⟨fun _ => 0⟩
+Cslib.ωSequence ℕ := ⟨fun n => n % 2⟩
+Cslib.ωSequence Bool := ⟨fun n => n % 2 == 0⟩
+Cslib.ωSequence Bool := ⟨fun _ => true⟩

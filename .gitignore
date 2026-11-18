@@ -28,4 +28,3 @@ libs/core/certs/.olean/
 # Not part of the published repository; workspaces/ holds your own tool/hypcheck runs
 workspaces/
 bench/
-libs/combinatorial-games/

@@ -22,6 +22,7 @@ stays read-only.
 | `libs/core/` | **The Lean 4 core library (Init, Std, Lean, Lake, private theorems).** Its `AGENTS.md` (layout, running, pitfalls), `Results.md`, `Findings.md`, and `results/`, `checks/`, `proofs/`, `certs/`, `scripts/`, `seeds/`. Run its scripts from `libs/core` |
 | `libs/batteries/`, `libs/cslib/` | Batteries and CSLib, set up by hand before the tool existed |
 | `libs/iris-lean/`, `libs/mathlib-data/`, `libs/mathlib-logic-basic/`, `libs/sampcert/` | Made with earlier versions of the tool; each has its own `AGENTS.md` |
+| `libs/combinatorial-games/` | Made with the current tool (v12.3, module system); its own `AGENTS.md` |
 | `scripts/verify_rows.py` | Fast check (seconds) that every decided row of every workspace points to an existing proof; run it after moving or deleting files |
 | `kit/` | Tool files shared by several published workspaces, in the versions they were run with; the workspaces hold relative symlinks to them (`kit/README.md`) |
 

@@ -1,0 +1,56 @@
+-- combinatorial-games models (2026-11-14): small concrete values for the library's own types.
+-- Concatenated with scripts/models.txt for `--models` (runs/models/used_<k>.txt).
+-- IGame: numeric (0, 1, -1, ½, 2), non-numeric short (⋆, ↑), impartial (0, ⋆), non-impartial (1, ↑).
+IGame := (0 : IGame)
+IGame := (1 : IGame)
+IGame := IGame.star
+IGame := (-1 : IGame)
+IGame := IGame.half
+IGame := IGame.up
+IGame := (2 : IGame)
+-- Game (quotient)
+Game := (0 : Game)
+Game := (1 : Game)
+Game := Game.mk IGame.star
+Game := (-1 : Game)
+-- Surreal
+Surreal := (0 : Surreal)
+Surreal := (1 : Surreal)
+Surreal := (-1 : Surreal)
+Surreal := ((1/2 : ℚ) : Surreal)
+Surreal := (2 : Surreal)
+-- Nimber: ∗2 and ∗4 are fields (F2, F4), ∗3 is not a group (1 + 2 = 3).
+Nimber := Nimber.of 0
+Nimber := Nimber.of 1
+Nimber := Nimber.of 2
+Nimber := Nimber.of 3
+Nimber := Nimber.of 4
+-- Ordinals
+Ordinal := (0 : Ordinal)
+Ordinal := (1 : Ordinal)
+Ordinal := (2 : Ordinal)
+Ordinal := Ordinal.omega0
+NatOrdinal := NatOrdinal.of 0
+NatOrdinal := NatOrdinal.of 1
+NatOrdinal := NatOrdinal.of 2
+NatOrdinal := NatOrdinal.of Ordinal.omega0
+-- Player
+Player := Player.left
+Player := Player.right
+-- Sets of games
+Set IGame := (∅ : Set IGame)
+Set IGame := ({0} : Set IGame)
+Set IGame := ({0, 1} : Set IGame)
+Set IGame := ({IGame.star} : Set IGame)
+Set Surreal := (∅ : Set Surreal)
+Set Surreal := ({0} : Set Surreal)
+Set Surreal := ({0, 1} : Set Surreal)
+-- Polynomials over nimbers
+Polynomial Nimber := (Polynomial.X : Polynomial Nimber)
+Polynomial Nimber := (Polynomial.X ^ 2 + Polynomial.X + 1 : Polynomial Nimber)
+Polynomial Nimber := (Polynomial.C (Nimber.of 2) : Polynomial Nimber)
+Polynomial Nimber := (0 : Polynomial Nimber)
+-- Dyadic
+Dyadic := (0 : Dyadic)
+Dyadic := (1 : Dyadic)
+Dyadic := Dyadic.half

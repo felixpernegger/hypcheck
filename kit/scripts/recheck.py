@@ -10,7 +10,7 @@ Compiles checks/*.lean, the public tool proofs proofs/tool/**/part_*.lean, and t
 proofs/tool/**/bymod/**/*.lean (each with its own module as the main module, so private names resolve).
 First builds what some of these files import, into tools/hcrepair/ and runs/remtrans/mods/:
 - HCRepair (proof repair; imported by checks/Repair*Hand.lean),
-- HCImportsM and HCHeaderM from runs/hcimports/ (the slim Mathlib imports, where that folder exists),
+- HCImportsM, HCHeaderM and HCRefute from runs/hcimports/ (slim imports and module-system headers, where that folder exists),
 - RT_<path>: the proof files that checks/RemTrans*Hand.lean import, compiled as modules.
 One line per file "OK|FAIL seconds file" in runs/recheck/summary.txt, full logs next to it; exit status 1 if any
 file fails. This checks that Lean accepts the files; that each declaration states exactly the claimed verdict, with
@@ -108,9 +108,11 @@ def main():
     ok = True
     if 'HCRepair' in needed:
         ok &= build('scripts/HCRepair.lean', TOOLS, 'HCRepair')
-    if needed & {'HCImportsM', 'HCHeaderM'}:
-        for m in ('HCImportsM', 'HCHeaderM'):  # HCHeaderM imports HCImportsM
-            ok &= build(f'runs/hcimports/{m}.lean', TOOLS, m)
+    if needed & {'HCImportsM', 'HCHeaderM', 'HCRefute'}:
+        # HCHeaderM imports HCImportsM; HCRefute (module-system refute_dep core) imports HCHeaderM
+        for m in ('HCImportsM', 'HCHeaderM', 'HCRefute'):
+            if m != 'HCRefute' or 'HCRefute' in needed:
+                ok &= build(f'runs/hcimports/{m}.lean', TOOLS, m)
     for m in sorted(m for m in needed if m.startswith('RT_')):
         if m not in sources:
             print(f'FAIL: no source file for module {m}'); ok = False; continue

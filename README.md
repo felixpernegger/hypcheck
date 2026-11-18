@@ -21,6 +21,7 @@ The analysis has been run on these libraries:
 | Mathlib: [Data](libs/mathlib-data/Results.md), [Logic and Basic](libs/mathlib-logic-basic/Results.md) | Mathlib `bbff2954fe5` | 15,010 | 14,529 | 477 | 4 | 0 |
 | [iris-lean](libs/iris-lean/Results.md) | `8293092f` | 6,260 | 6,035 | 195 | 5 | 25 |
 | [CSLib](libs/cslib/Results.md) | `f8acdb37` | 2,699 | 2,593 | 105 | 1 | 0 |
+| [combinatorial-games](libs/combinatorial-games/Results.md) | `e8c9538` | 2,597 | 2,392 | 146 | 0 | 59 |
 | [Batteries](libs/batteries/Results.md) | `4af7237` | 1,326 | 1,259 | 66 | 1 | 0 |
 | [SampCert](libs/sampcert/Results.md) | `a2c53bb` | 607 | 418 | 189 | 0 | 0 |
 
@@ -48,9 +49,9 @@ breaks its callers.
    uncovered verdicts and rejects non-standard axioms. The tool's own proofs get the same statement check when they
    are found.
 
-Of all 92,535 hypotheses, 54% were decided by the hand passes, 37% by the tool, the detectors and transitive necessity,
-and 9% (all in Lean core) by a generated tactic for dependent hypotheses. The mechanical share ranges from 13.5%
-(iris-lean) to 66% (Batteries). Removable hypotheses mostly needed the hand passes: 7,628 of the 9,401 (81%).
+Of all 95,132 hypotheses, 54% were decided by the hand passes, 37% by the tool, the detectors and transitive necessity,
+and 9% (almost all in Lean core) by a generated tactic for dependent hypotheses. The mechanical share ranges from 13.5%
+(iris-lean) to 66% (Batteries). Removable hypotheses mostly needed the hand passes: 7,738 of the 9,547 (81%).
 
 ## Checking your own library
 
